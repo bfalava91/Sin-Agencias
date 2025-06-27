@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -45,8 +46,8 @@ const Search = () => {
         
         const transformed = {
           id: listing.id,
-          title: `${getDisplayPropertyType(listing.property_type)} en ${listing.town}`,
-          location: `${listing.town}${listing.postcode ? `, ${listing.postcode}` : ''}`,
+          title: generateListingTitle(listing),
+          location: generateLocationText(listing),
           price: listing.monthly_rent || (listing.weekly_rent ? listing.weekly_rent * 4 : 0),
           bedrooms: listing.bedrooms || 1,
           bathrooms: listing.bathrooms || 1,
@@ -69,6 +70,51 @@ const Search = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const generateListingTitle = (listing) => {
+    const propertyType = getDisplayPropertyType(listing.property_type);
+    const bedrooms = listing.bedrooms ? `${listing.bedrooms} hab.` : '';
+    
+    // Build location string with preference: neighborhood > town > postcode
+    let location = '';
+    if (listing.neighborhood) {
+      location = listing.neighborhood;
+    } else if (listing.town) {
+      location = listing.town;
+    } else if (listing.postcode) {
+      location = listing.postcode;
+    }
+    
+    // Build the title
+    let title = propertyType;
+    if (bedrooms) {
+      title += ` ${bedrooms}`;
+    }
+    if (location) {
+      title += ` en ${location}`;
+    }
+    
+    return title;
+  };
+
+  const generateLocationText = (listing) => {
+    // Build a comprehensive location string
+    const parts = [];
+    
+    if (listing.neighborhood) {
+      parts.push(listing.neighborhood);
+    }
+    
+    if (listing.town) {
+      parts.push(listing.town);
+    }
+    
+    if (listing.postcode) {
+      parts.push(listing.postcode);
+    }
+    
+    return parts.join(', ') || 'Ubicación no especificada';
   };
 
   const getDisplayPropertyType = (dbType) => {

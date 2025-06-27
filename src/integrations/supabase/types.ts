@@ -33,6 +33,7 @@ export type Database = {
           min_tenancy: number | null
           monthly_rent: number | null
           move_in_date: string | null
+          neighborhood: string | null
           parking: boolean | null
           pets_allowed: boolean | null
           postcode: string | null
@@ -71,6 +72,7 @@ export type Database = {
           min_tenancy?: number | null
           monthly_rent?: number | null
           move_in_date?: string | null
+          neighborhood?: string | null
           parking?: boolean | null
           pets_allowed?: boolean | null
           postcode?: string | null
@@ -109,6 +111,7 @@ export type Database = {
           min_tenancy?: number | null
           monthly_rent?: number | null
           move_in_date?: string | null
+          neighborhood?: string | null
           parking?: boolean | null
           pets_allowed?: boolean | null
           postcode?: string | null

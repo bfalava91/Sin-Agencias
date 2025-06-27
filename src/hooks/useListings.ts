@@ -11,6 +11,7 @@ export interface ListingFormData {
   addressLine2: string;
   addressLine3: string;
   town: string;
+  neighborhood: string;
   advertType: string;
   propertyType: string;
   bedrooms: string;
@@ -65,6 +66,7 @@ export const useListings = () => {
         address_line_2: formData.addressLine2 || null,
         address_line_3: formData.addressLine3 || null,
         town: formData.town || null,
+        neighborhood: formData.neighborhood || null,
         advert_type: formData.advertType || null,
         property_type: formData.propertyType || null,
         bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,

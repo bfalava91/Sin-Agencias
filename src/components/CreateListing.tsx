@@ -24,6 +24,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     addressLine2: "",
     addressLine3: "",
     town: "",
+    neighborhood: "",
     advertType: "",
     propertyType: "",
     bedrooms: "",
@@ -227,16 +228,29 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="town">Ciudad *</Label>
-              <Input
-                id="town"
-                value={formData.town}
-                onChange={(e) => handleInputChange("town", e.target.value)}
-                placeholder="Ej: Madrid"
-                required
-                disabled={isLoading}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="town">Ciudad *</Label>
+                <Input
+                  id="town"
+                  value={formData.town}
+                  onChange={(e) => handleInputChange("town", e.target.value)}
+                  placeholder="Ej: Madrid"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="neighborhood">Barrio</Label>
+                <Input
+                  id="neighborhood"
+                  value={formData.neighborhood}
+                  onChange={(e) => handleInputChange("neighborhood", e.target.value)}
+                  placeholder="Ej: Malasaña, Chueca, Sol"
+                  disabled={isLoading}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
