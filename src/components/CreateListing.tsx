@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +54,16 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     agreedToTerms: false
   });
 
+  // Individual feature fields for better UX
+  const [featureFields, setFeatureFields] = useState({
+    feature1: "",
+    feature2: "",
+    feature3: "",
+    feature4: "",
+    feature5: "",
+    feature6: ""
+  });
+
   useEffect(() => {
     const checkExistingListings = async () => {
       if (user) {
@@ -69,6 +78,15 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
 
   const handleInputChange = (field: keyof ListingFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFeatureChange = (featureKey: keyof typeof featureFields, value: string) => {
+    setFeatureFields(prev => ({ ...prev, [featureKey]: value }));
+    
+    // Update the main features field by combining all individual features
+    const updatedFeatures = { ...featureFields, [featureKey]: value };
+    const featuresArray = Object.values(updatedFeatures).filter(f => f.trim() !== '');
+    setFormData(prev => ({ ...prev, features: featuresArray.join('\n') }));
   };
 
   const handleSubmit = async (e: React.FormEvent, publish = false) => {
@@ -352,11 +370,6 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 placeholder="Describe tu propiedad..."
                 disabled={isLoading}
               />
-              <div className="flex space-x-2 mt-2">
-                <Button type="button" variant="outline" size="sm" disabled={isLoading}>
-                  Escribir Descripción Ahora
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -466,15 +479,24 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
             </div>
             
             <div>
-              <Label htmlFor="features">Características Adicionales</Label>
-              <Textarea
-                id="features"
-                value={formData.features}
-                onChange={(e) => handleInputChange("features", e.target.value)}
-                rows={3}
-                placeholder="Describe características adicionales de la propiedad..."
-                disabled={isLoading}
-              />
+              <Label className="text-lg font-semibold mb-3 block">Mejores Características (opcional)</Label>
+              <p className="text-sm text-gray-600 mb-4">
+                Añade hasta 6 de las mejores características de tu propiedad. Estas aparecerán destacadas en tu anuncio.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4, 5, 6].map(num => (
+                  <div key={num}>
+                    <Label htmlFor={`feature${num}`}>Característica {num}</Label>
+                    <Input
+                      id={`feature${num}`}
+                      value={featureFields[`feature${num}` as keyof typeof featureFields]}
+                      onChange={(e) => handleFeatureChange(`feature${num}` as keyof typeof featureFields, e.target.value)}
+                      placeholder={`Ej: ${num === 1 ? 'Balcón con vistas' : num === 2 ? 'Cocina moderna' : num === 3 ? 'Mucha luz natural' : num === 4 ? 'Transporte público cercano' : num === 5 ? 'Barrio tranquilo' : 'Recientemente renovado'}`}
+                      disabled={isLoading}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

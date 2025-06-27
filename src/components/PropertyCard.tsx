@@ -9,17 +9,18 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface Property {
-  id: number;
-  title: string;
-  location: string;
-  price: number;
-  bedrooms: number;
-  bathrooms: number;
-  area: number;
-  image: string;
-  featured: boolean;
-  available: string;
-  type?: string;
+  id: string;
+  title?: string;
+  town?: string;
+  neighborhood?: string;
+  monthly_rent?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  property_type?: string;
+  furnishing?: string;
+  status: string;
+  move_in_date?: string;
+  features?: string;
 }
 
 interface PropertyCardProps {
@@ -32,14 +33,17 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Use placeholder image until image upload is implemented
+  const placeholderImage = "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
+
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsLiked(!isLiked);
     toast({
       title: isLiked ? "Eliminado de favoritos" : "Añadido a favoritos",
       description: isLiked 
-        ? `${property.title} eliminada de tus favoritos`
-        : `${property.title} añadida a tus favoritos`,
+        ? `${getTitle()} eliminada de tus favoritos`
+        : `${getTitle()} añadida a tus favoritos`,
     });
   };
 
@@ -49,28 +53,42 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
 
   const handleContact = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Simular contacto con el propietario
     toast({
       title: "Contactando propietario",
-      description: `Te pondremos en contacto para ${property.title}`,
+      description: `Te pondremos en contacto para ${getTitle()}`,
     });
+  };
+
+  const getTitle = () => {
+    return property.title || `${property.property_type || 'Propiedad'} en ${property.town || 'ubicación'}`;
+  };
+
+  const getLocation = () => {
+    const parts = [property.neighborhood, property.town].filter(Boolean);
+    return parts.join(', ') || 'Ubicación no especificada';
+  };
+
+  const getAvailabilityText = () => {
+    if (!property.move_in_date) return 'Disponible Ahora';
+    const moveInDate = new Date(property.move_in_date);
+    const today = new Date();
+    if (moveInDate <= today) return 'Disponible Ahora';
+    return `Disponible desde ${moveInDate.toLocaleDateString('es-ES')}`;
+  };
+
+  const getFeatures = () => {
+    if (!property.features) return [];
+    return property.features.split('\n').filter(feature => feature.trim() !== '').slice(0, 3);
   };
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden border-0 shadow-md cursor-pointer" onClick={handleViewDetails}>
       <div className="relative">
         <img 
-          src={property.image}
-          alt={property.title}
+          src={placeholderImage}
+          alt={getTitle()}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <div className="absolute top-3 left-3">
-          {property.featured && (
-            <Badge className="bg-green-500 hover:bg-green-600">
-              {t('featured.featured')}
-            </Badge>
-          )}
-        </div>
         <button 
           onClick={handleLike}
           className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
@@ -81,7 +99,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         </button>
         <div className="absolute bottom-3 left-3">
           <Badge variant="secondary" className="bg-white/90 text-gray-800">
-            {property.available}
+            {getAvailabilityText()}
           </Badge>
         </div>
       </div>
@@ -89,35 +107,58 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
       <CardContent className="p-6">
         <div className="mb-3">
           <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
-            {property.title}
+            {getTitle()}
           </h3>
           <div className="flex items-center text-gray-600 text-sm">
             <MapPin className="h-4 w-4 mr-1" />
-            {property.location}
+            {getLocation()}
           </div>
         </div>
         
         <div className="flex items-center justify-between mb-4">
           <div className="text-2xl font-bold text-gray-900">
-            €{property.price.toLocaleString()}
-            <span className="text-sm font-normal text-gray-600">{t('featured.month')}</span>
+            {property.monthly_rent ? `€${property.monthly_rent.toLocaleString()}` : 'Precio a consultar'}
+            <span className="text-sm font-normal text-gray-600">/mes</span>
           </div>
         </div>
         
         <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
-          <div className="flex items-center">
-            <Bed className="h-4 w-4 mr-1" />
-            {property.bedrooms} {property.bedrooms > 1 ? t('featured.beds') : t('featured.bed')}
-          </div>
-          <div className="flex items-center">
-            <Bath className="h-4 w-4 mr-1" />
-            {property.bathrooms} {property.bathrooms > 1 ? t('featured.baths') : t('featured.bath')}
-          </div>
-          <div className="flex items-center">
-            <Square className="h-4 w-4 mr-1" />
-            {property.area} {t('featured.sqft')}
-          </div>
+          {property.bedrooms && (
+            <div className="flex items-center">
+              <Bed className="h-4 w-4 mr-1" />
+              {property.bedrooms} {property.bedrooms > 1 ? 'hab' : 'hab'}
+            </div>
+          )}
+          {property.bathrooms && (
+            <div className="flex items-center">
+              <Bath className="h-4 w-4 mr-1" />
+              {property.bathrooms} {property.bathrooms > 1 ? 'baños' : 'baño'}
+            </div>
+          )}
+          {property.property_type && (
+            <div className="flex items-center">
+              <Square className="h-4 w-4 mr-1" />
+              {property.property_type === 'flat' ? 'Piso' : 
+               property.property_type === 'studio' ? 'Estudio' : 
+               property.property_type === 'house' ? 'Casa' : 
+               property.property_type}
+            </div>
+          )}
         </div>
+
+        {/* Show features if available */}
+        {getFeatures().length > 0 && (
+          <div className="mb-4">
+            <ul className="text-sm text-gray-600">
+              {getFeatures().map((feature, index) => (
+                <li key={index} className="flex items-center mb-1">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         
         <div className="flex space-x-2">
           <Button 
@@ -127,14 +168,14 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               handleViewDetails();
             }}
           >
-            {t('featured.viewDetails')}
+            Ver Detalles
           </Button>
           <Button 
             variant="outline" 
             className="flex-1"
             onClick={handleContact}
           >
-            {t('featured.contact')}
+            Contactar
           </Button>
         </div>
       </CardContent>

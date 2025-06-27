@@ -1,11 +1,11 @@
+
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   ArrowLeft, 
-  ArrowRight,
   Bed, 
   Bath, 
   Square, 
@@ -19,120 +19,123 @@ import {
   ChevronRight,
   MessageCircle,
   Clock,
-  Euro,
-  Users,
-  PawPrint,
-  Cigarette,
-  GraduationCap,
-  Calendar as CalendarIcon,
-  Eye,
-  TreePine,
-  Car,
-  Flame,
-  Sofa,
-  Zap,
   MapIcon,
   Mail,
   MessageSquare,
-  Home,
   UserCheck,
   Building,
-  CreditCard
+  CreditCard,
+  Calendar as CalendarIcon
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data - en una aplicación real vendría de una API
-const propertyDetails = {
-  1: {
-    id: 1,
-    title: "Moderno Apartamento 2 Habitaciones",
-    location: "Malasaña, Madrid",
-    price: 1850,
-    deposit: 1850,
-    billsIncluded: true,
-    internet: true,
-    bedrooms: 2,
-    bathrooms: 1,
-    area: 70,
-    maxTenants: 4,
-    images: [
-      "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1486304873000-235643847519?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop"
-    ],
-    featured: true,
-    available: "Disponible Ahora",
-    availableFrom: "2024-07-01",
-    minimumTenancy: 6,
-    type: "flat",
-    description: "Hermoso apartamento moderno en el corazón de Malasaña. Completamente renovado con acabados de alta calidad. Ubicación perfecta cerca de tiendas, restaurantes y transporte público.",
-    features: [
-      "Completamente amueblado",
-      "Aire acondicionado",
-      "Calefacción central",
-      "Internet de alta velocidad",
-      "Electrodomésticos nuevos",
-      "Balcón privado"
-    ],
-    preferences: {
-      students: true,
-      families: false,
-      pets: true,
-      smokers: false,
-      dssLha: false
-    },
-    availability: {
-      shortTerm: false,
-      virtualTour: true
-    },
-    amenities: {
-      garden: true,
-      parking: true,
-      fireplace: false,
-      furnished: true,
-      energyRating: "B"
-    },
-    landlord: {
-      name: "María García",
-      phone: "+34 666 123 456",
-      email: "maria.garcia@email.com",
-      verified: true,
-      responseRate: 95,
-      responseTime: 2
-    },
-    coordinates: {
-      lat: 40.4267,
-      lng: -3.7038
-    }
-  }
-};
+interface Listing {
+  id: string;
+  title: string;
+  description: string;
+  postcode: string;
+  town: string;
+  neighborhood: string;
+  monthly_rent: number;
+  deposit: string;
+  bedrooms: number;
+  bathrooms: number;
+  property_type: string;
+  furnishing: string;
+  bills_included: boolean;
+  garden_access: boolean;
+  parking: boolean;
+  fireplace: boolean;
+  students_allowed: boolean;
+  families_allowed: boolean;
+  pets_allowed: boolean;
+  smokers_allowed: boolean;
+  students_only: boolean;
+  max_tenants: number;
+  min_tenancy: number;
+  move_in_date: string;
+  remote_viewings: boolean;
+  features: string;
+  status: string;
+  user_id: string;
+  profiles?: {
+    full_name: string;
+    email: string;
+  };
+}
 
 const PropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const property = propertyDetails[parseInt(id || '1') as keyof typeof propertyDetails] || propertyDetails[1];
+  // Placeholder images - these will be replaced when image upload is implemented
+  const placeholderImages = [
+    "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1486304873000-235643847519?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop"
+  ];
+
+  useEffect(() => {
+    const fetchListing = async () => {
+      if (!id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('listings')
+          .select(`
+            *,
+            profiles!listings_user_id_fkey (
+              full_name,
+              email
+            )
+          `)
+          .eq('id', id)
+          .eq('status', 'active')
+          .single();
+
+        if (error) {
+          console.error('Error fetching listing:', error);
+          toast({
+            title: "Error",
+            description: "No se pudo cargar la propiedad",
+            variant: "destructive",
+          });
+          navigate('/');
+          return;
+        }
+
+        setListing(data);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchListing();
+  }, [id, navigate, toast]);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => 
-      prev === property.images.length - 1 ? 0 : prev + 1
+      prev === placeholderImages.length - 1 ? 0 : prev + 1
     );
   };
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => 
-      prev === 0 ? property.images.length - 1 : prev - 1
+      prev === 0 ? placeholderImages.length - 1 : prev - 1
     );
   };
 
@@ -147,7 +150,7 @@ const PropertyDetail = () => {
 
   const handleShare = (platform: string) => {
     const url = window.location.href;
-    const title = property.title;
+    const title = listing?.title || 'Propiedad';
     const text = `Echa un vistazo a esta propiedad: ${title}`;
 
     switch (platform) {
@@ -174,9 +177,67 @@ const PropertyDetail = () => {
   };
 
   const openMap = () => {
-    const url = `https://www.google.com/maps?q=${property.coordinates.lat},${property.coordinates.lng}`;
-    window.open(url, '_blank');
+    if (listing?.postcode) {
+      const query = `${listing.town || ''} ${listing.postcode}`.trim();
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+      window.open(url, '_blank');
+    }
   };
+
+  const formatAddress = () => {
+    if (!listing) return '';
+    const parts = [listing.neighborhood, listing.town].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  const getAvailabilityText = () => {
+    if (!listing?.move_in_date) return 'Disponible Ahora';
+    const moveInDate = new Date(listing.move_in_date);
+    const today = new Date();
+    if (moveInDate <= today) return 'Disponible Ahora';
+    return `Disponible desde ${moveInDate.toLocaleDateString('es-ES')}`;
+  };
+
+  const parseFeatures = () => {
+    if (!listing?.features) return [];
+    return listing.features.split('\n').filter(feature => feature.trim() !== '').slice(0, 6);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-32 mb-6"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <div className="h-96 bg-gray-200 rounded-lg mb-4"></div>
+                <div className="h-64 bg-gray-200 rounded-lg"></div>
+              </div>
+              <div className="lg:col-span-1">
+                <div className="h-96 bg-gray-200 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!listing) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
+          <h1 className="text-2xl font-bold mb-4">Propiedad no encontrada</h1>
+          <Button onClick={() => navigate('/')}>Volver al inicio</Button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -197,8 +258,8 @@ const PropertyDetail = () => {
           <div className="lg:col-span-2">
             <div className="relative mb-4">
               <img 
-                src={property.images[currentImageIndex]}
-                alt={property.title}
+                src={placeholderImages[currentImageIndex]}
+                alt={listing.title || 'Propiedad'}
                 className="w-full h-96 object-cover rounded-lg"
               />
               
@@ -208,7 +269,7 @@ const PropertyDetail = () => {
                 variant="secondary"
                 onClick={prevImage}
                 className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
-                disabled={property.images.length <= 1}
+                disabled={placeholderImages.length <= 1}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -217,7 +278,7 @@ const PropertyDetail = () => {
                 variant="secondary"
                 onClick={nextImage}
                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
-                disabled={property.images.length <= 1}
+                disabled={placeholderImages.length <= 1}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -242,15 +303,10 @@ const PropertyDetail = () => {
                   <Share2 className="h-4 w-4" />
                 </Button>
               </div>
-              {property.featured && (
-                <Badge className="absolute top-4 left-4 bg-green-500 hover:bg-green-600">
-                  {t('featured.featured')}
-                </Badge>
-              )}
             </div>
             
             <div className="flex space-x-2 mb-6 overflow-x-auto">
-              {property.images.map((image, index) => (
+              {placeholderImages.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
@@ -271,24 +327,32 @@ const PropertyDetail = () => {
             <Card className="mb-6">
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold mb-4">Descripción</h3>
-                <p className="text-gray-600 mb-6">{property.description}</p>
+                {listing.description ? (
+                  <p className="text-gray-600 mb-6">{listing.description}</p>
+                ) : (
+                  <p className="text-gray-400 mb-6">No hay descripción disponible</p>
+                )}
                 
-                <h4 className="text-lg font-semibold mb-3">Características</h4>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {property.features.map((feature, index) => (
-                    <li key={index} className="flex items-center text-gray-600">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                {parseFeatures().length > 0 && (
+                  <>
+                    <h4 className="text-lg font-semibold mb-3">Características</h4>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {parseFeatures().map((feature, index) => (
+                        <li key={index} className="flex items-center text-gray-600">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {/* Features Section - All in Spanish, no tabs */}
+            {/* Features Section */}
             <Card className="mb-6">
               <CardHeader>
-                <CardTitle>Características</CardTitle>
+                <CardTitle>Detalles de la Propiedad</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -299,26 +363,21 @@ const PropertyDetail = () => {
                       Precio y Gastos
                     </h4>
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Depósito</span>
-                        <span className="font-semibold">€{property.deposit.toLocaleString()}</span>
-                      </div>
+                      {listing.deposit && (
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span className="text-gray-600">Depósito</span>
+                          <span className="font-semibold">{listing.deposit}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Alquiler PCM</span>
-                        <span className="font-semibold">€{property.price.toLocaleString()}</span>
+                        <span className="font-semibold">€{listing.monthly_rent?.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Gastos incluidos</span>
-                        {property.billsIncluded ? 
+                        {listing.bills_included ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
-                        }
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-600">Internet</span>
-                        {property.internet ? 
-                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
-                          <span className="text-blue-600 text-sm">Ver Ofertas</span>
                         }
                       </div>
                     </div>
@@ -333,43 +392,38 @@ const PropertyDetail = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Acepta estudiantes</span>
-                        {property.preferences.students ? 
+                        {listing.students_allowed ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Familias permitidas</span>
-                        {property.preferences.families ? 
+                        {listing.families_allowed ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Mascotas permitidas</span>
-                        {property.preferences.pets ? 
+                        {listing.pets_allowed ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Fumadores permitidos</span>
-                        {property.preferences.smokers ? 
+                        {listing.smokers_allowed ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">DSS/LHA Cubre Alquiler</span>
-                        {property.preferences.dssLha ? 
-                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
-                          <XCircle className="h-5 w-5 text-red-500" />
-                        }
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-600">Máximos inquilinos</span>
-                        <span className="font-semibold">{property.maxTenants}</span>
-                      </div>
+                      {listing.max_tenants && (
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-gray-600">Máximos inquilinos</span>
+                          <span className="font-semibold">{listing.max_tenants}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -380,23 +434,27 @@ const PropertyDetail = () => {
                       Disponibilidad
                     </h4>
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Disponible desde</span>
-                        <span className="font-semibold">
-                          {new Date(property.availableFrom).toLocaleDateString('es-ES', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Duración mínima</span>
-                        <span className="font-semibold">{property.minimumTenancy} Meses</span>
-                      </div>
+                      {listing.move_in_date && (
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span className="text-gray-600">Disponible desde</span>
+                          <span className="font-semibold">
+                            {new Date(listing.move_in_date).toLocaleDateString('es-ES', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      {listing.min_tenancy && (
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span className="text-gray-600">Duración mínima</span>
+                          <span className="font-semibold">{listing.min_tenancy} Meses</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-2">
                         <span className="text-gray-600">Visitas virtuales</span>
-                        {property.availability.virtualTour ? 
+                        {listing.remote_viewings ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
@@ -413,37 +471,35 @@ const PropertyDetail = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Jardín</span>
-                        {property.amenities.garden ? 
+                        {listing.garden_access ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Aparcamiento</span>
-                        {property.amenities.parking ? 
+                        {listing.parking ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
                         <span className="text-gray-600">Chimenea</span>
-                        {property.amenities.fireplace ? 
+                        {listing.fireplace ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Amueblado</span>
-                        <span className="text-sm text-gray-600">
-                          {property.amenities.furnished ? 'Amueblado' : 'A elección del inquilino'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-600">Clasificación energética</span>
-                        <Badge variant="secondary" className="font-semibold">
-                          {property.amenities.energyRating}
-                        </Badge>
-                      </div>
+                      {listing.furnishing && (
+                        <div className="flex justify-between items-center py-2 border-b">
+                          <span className="text-gray-600">Amueblado</span>
+                          <span className="text-sm text-gray-600">
+                            {listing.furnishing === 'furnished' ? 'Amueblado' : 
+                             listing.furnishing === 'unfurnished' ? 'Sin amueblar' : 
+                             'A elección del inquilino'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -462,7 +518,7 @@ const PropertyDetail = () => {
                 <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                   <div className="text-center">
                     <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-600 mb-2">{property.location}</p>
+                    <p className="text-gray-600 mb-2">{formatAddress()}</p>
                     <Button onClick={openMap} variant="outline">
                       Ver en Google Maps
                     </Button>
@@ -477,15 +533,15 @@ const PropertyDetail = () => {
             <Card className="sticky top-8">
               <CardContent className="p-6">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                  {property.title}
+                  {listing.title || `${listing.property_type} en ${listing.town}`}
                 </h1>
                 <div className="flex items-center text-gray-600 mb-4">
                   <MapPin className="h-4 w-4 mr-1" />
-                  {property.location}
+                  {formatAddress()}
                 </div>
 
                 <div className="text-3xl font-bold text-gray-900 mb-2">
-                  €{property.price.toLocaleString()}
+                  €{listing.monthly_rent?.toLocaleString()}
                   <span className="text-lg font-normal text-gray-600">/mes</span>
                 </div>
                 <div className="text-sm text-green-600 font-medium mb-6">
@@ -494,24 +550,24 @@ const PropertyDetail = () => {
                 </div>
 
                 <div className="flex items-center space-x-6 mb-6 text-gray-600">
-                  <div className="flex items-center">
-                    <Bed className="h-5 w-5 mr-2" />
-                    {property.bedrooms} hab
-                  </div>
-                  <div className="flex items-center">
-                    <Bath className="h-5 w-5 mr-2" />
-                    {property.bathrooms} baño
-                  </div>
-                  <div className="flex items-center">
-                    <Square className="h-5 w-5 mr-2" />
-                    {property.area} m²
-                  </div>
+                  {listing.bedrooms && (
+                    <div className="flex items-center">
+                      <Bed className="h-5 w-5 mr-2" />
+                      {listing.bedrooms} hab
+                    </div>
+                  )}
+                  {listing.bathrooms && (
+                    <div className="flex items-center">
+                      <Bath className="h-5 w-5 mr-2" />
+                      {listing.bathrooms} baño{listing.bathrooms > 1 ? 's' : ''}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-6">
                   <Badge variant="secondary" className="bg-green-100 text-green-800">
                     <Calendar className="h-3 w-3 mr-1" />
-                    {property.available}
+                    {getAvailabilityText()}
                   </Badge>
                 </div>
 
@@ -521,27 +577,25 @@ const PropertyDetail = () => {
                   <div className="flex items-center mb-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                       <span className="text-blue-600 font-semibold">
-                        {property.landlord.name.charAt(0)}
+                        {listing.profiles?.full_name?.charAt(0) || 'U'}
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium">{property.landlord.name}</p>
-                      {property.landlord.verified && (
-                        <Badge variant="secondary" className="text-xs">
-                          Verificado
-                        </Badge>
-                      )}
+                      <p className="font-medium">{listing.profiles?.full_name || 'Usuario'}</p>
+                      <Badge variant="secondary" className="text-xs">
+                        Verificado
+                      </Badge>
                     </div>
                   </div>
                   
                   <div className="space-y-2 text-sm text-gray-600 mb-4">
                     <div className="flex items-center">
                       <MessageCircle className="h-4 w-4 mr-2" />
-                      Responde al {property.landlord.responseRate}% de los mensajes
+                      Responde a los mensajes
                     </div>
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2" />
-                      Suele responder en {property.landlord.responseTime} días
+                      Suele responder pronto
                     </div>
                   </div>
                 </div>
