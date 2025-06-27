@@ -1,10 +1,8 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   ArrowRight,
@@ -45,6 +43,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock data - en una aplicación real vendría de una API
 const propertyDetails = {
@@ -121,6 +120,7 @@ const PropertyDetail = () => {
   const [isLiked, setIsLiked] = useState(false);
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const property = propertyDetails[parseInt(id || '1') as keyof typeof propertyDetails] || propertyDetails[1];
 
@@ -137,10 +137,12 @@ const PropertyDetail = () => {
   };
 
   const handleContact = () => {
-    toast({
-      title: "Contactando propietario",
-      description: "Te pondremos en contacto para concertar una visita",
-    });
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
+    navigate(`/message-landlord/${id}`);
   };
 
   const handleShare = (platform: string) => {
@@ -283,91 +285,82 @@ const PropertyDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Features Section */}
+            {/* Features Section - All in Spanish, no tabs */}
             <Card className="mb-6">
               <CardHeader>
-                <CardTitle>Features</CardTitle>
+                <CardTitle>Características</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <Tabs defaultValue="price" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="price" className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      Price & Bills
-                    </TabsTrigger>
-                    <TabsTrigger value="tenant" className="flex items-center gap-2">
-                      <UserCheck className="h-4 w-4" />
-                      Tenant Preference
-                    </TabsTrigger>
-                    <TabsTrigger value="availability" className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4" />
-                      Availability
-                    </TabsTrigger>
-                    <TabsTrigger value="features" className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Features
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="price" className="mt-6">
-                    <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Price & Bills */}
+                  <div>
+                    <h4 className="font-semibold text-lg mb-4 flex items-center">
+                      <CreditCard className="h-5 w-5 mr-2 text-blue-600" />
+                      Precio y Gastos
+                    </h4>
+                    <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Deposit</span>
+                        <span className="text-gray-600">Depósito</span>
                         <span className="font-semibold">€{property.deposit.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Rent PCM</span>
+                        <span className="text-gray-600">Alquiler PCM</span>
                         <span className="font-semibold">€{property.price.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Bills Included</span>
+                        <span className="text-gray-600">Gastos incluidos</span>
                         {property.billsIncluded ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-600">Broadband</span>
+                        <span className="text-gray-600">Internet</span>
                         {property.internet ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
-                          <span className="text-blue-600 text-sm">View Offers</span>
+                          <span className="text-blue-600 text-sm">Ver Ofertas</span>
                         }
                       </div>
                     </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="tenant" className="mt-6">
-                    <div className="space-y-4">
+                  </div>
+
+                  {/* Tenant Preference */}
+                  <div>
+                    <h4 className="font-semibold text-lg mb-4 flex items-center">
+                      <UserCheck className="h-5 w-5 mr-2 text-blue-600" />
+                      Preferencias de Inquilino
+                    </h4>
+                    <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Student Friendly</span>
+                        <span className="text-gray-600">Acepta estudiantes</span>
                         {property.preferences.students ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Families Allowed</span>
+                        <span className="text-gray-600">Familias permitidas</span>
                         {property.preferences.families ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Pets Allowed</span>
+                        <span className="text-gray-600">Mascotas permitidas</span>
                         {property.preferences.pets ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Smokers Allowed</span>
+                        <span className="text-gray-600">Fumadores permitidos</span>
                         {property.preferences.smokers ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">DSS/LHA Covers Rent</span>
+                        <span className="text-gray-600">DSS/LHA Cubre Alquiler</span>
                         {property.preferences.dssLha ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
@@ -378,14 +371,19 @@ const PropertyDetail = () => {
                         <span className="font-semibold">{property.maxTenants}</span>
                       </div>
                     </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="availability" className="mt-6">
-                    <div className="space-y-4">
+                  </div>
+
+                  {/* Availability */}
+                  <div>
+                    <h4 className="font-semibold text-lg mb-4 flex items-center">
+                      <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
+                      Disponibilidad
+                    </h4>
+                    <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Available From</span>
+                        <span className="text-gray-600">Disponible desde</span>
                         <span className="font-semibold">
-                          {new Date(property.availableFrom).toLocaleDateString('en-GB', {
+                          {new Date(property.availableFrom).toLocaleDateString('es-ES', {
                             day: 'numeric',
                             month: 'long',
                             year: 'numeric'
@@ -393,57 +391,62 @@ const PropertyDetail = () => {
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Minimum Tenancy</span>
-                        <span className="font-semibold">{property.minimumTenancy} Months</span>
+                        <span className="text-gray-600">Duración mínima</span>
+                        <span className="font-semibold">{property.minimumTenancy} Meses</span>
                       </div>
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-600">Online Viewings</span>
+                        <span className="text-gray-600">Visitas virtuales</span>
                         {property.availability.virtualTour ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                     </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="features" className="mt-6">
-                    <div className="space-y-4">
+                  </div>
+
+                  {/* Features */}
+                  <div>
+                    <h4 className="font-semibold text-lg mb-4 flex items-center">
+                      <Building className="h-5 w-5 mr-2 text-blue-600" />
+                      Características
+                    </h4>
+                    <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Garden</span>
+                        <span className="text-gray-600">Jardín</span>
                         {property.amenities.garden ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Parking</span>
+                        <span className="text-gray-600">Aparcamiento</span>
                         {property.amenities.parking ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Fireplace</span>
+                        <span className="text-gray-600">Chimenea</span>
                         {property.amenities.fireplace ? 
                           <CheckCircle className="h-5 w-5 text-green-500" /> : 
                           <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-gray-600">Furnishing</span>
+                        <span className="text-gray-600">Amueblado</span>
                         <span className="text-sm text-gray-600">
-                          {property.amenities.furnished ? 'Furnished' : 'At tenant choice'}
+                          {property.amenities.furnished ? 'Amueblado' : 'A elección del inquilino'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-600">EPC Rating</span>
+                        <span className="text-gray-600">Clasificación energética</span>
                         <Badge variant="secondary" className="font-semibold">
                           {property.amenities.energyRating}
                         </Badge>
                       </div>
                     </div>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
