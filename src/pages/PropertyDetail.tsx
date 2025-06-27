@@ -91,21 +91,16 @@ const PropertyDetail = () => {
       if (!id) return;
 
       try {
-        const { data, error } = await supabase
+        // First fetch the listing
+        const { data: listingData, error: listingError } = await supabase
           .from('listings')
-          .select(`
-            *,
-            profiles!listings_user_id_fkey (
-              full_name,
-              email
-            )
-          `)
+          .select('*')
           .eq('id', id)
           .eq('status', 'active')
           .single();
 
-        if (error) {
-          console.error('Error fetching listing:', error);
+        if (listingError) {
+          console.error('Error fetching listing:', listingError);
           toast({
             title: "Error",
             description: "No se pudo cargar la propiedad",
@@ -115,17 +110,35 @@ const PropertyDetail = () => {
           return;
         }
 
-        // Handle the case where profiles might be null or have an error
+        // Then fetch the profile separately if we have a user_id
+        let profileData = null;
+        if (listingData?.user_id) {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', listingData.user_id)
+            .single();
+
+          if (!profileError && profile) {
+            profileData = profile;
+          }
+        }
+
+        // Combine the data
         const listingWithProfiles = {
-          ...data,
-          profiles: data.profiles && typeof data.profiles === 'object' && !Array.isArray(data.profiles) && 'full_name' in data.profiles 
-            ? data.profiles 
-            : undefined
+          ...listingData,
+          profiles: profileData
         };
 
         setListing(listingWithProfiles);
       } catch (error) {
         console.error('Error:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo cargar la propiedad",
+          variant: "destructive",
+        });
+        navigate('/');
       } finally {
         setLoading(false);
       }
