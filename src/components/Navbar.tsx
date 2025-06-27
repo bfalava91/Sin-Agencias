@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Menu, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -63,6 +62,10 @@ const Navbar = () => {
 
   const handleHome = () => {
     navigate('/');
+  };
+
+  const handleProfile = () => {
+    navigate('/profile');
   };
 
   return (
@@ -160,6 +163,10 @@ const Navbar = () => {
                     {user.email}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleProfile} className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span>Mi Perfil</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="flex items-center space-x-2">
                     <LogOut className="h-4 w-4" />
                     <span>Cerrar Sesión</span>
