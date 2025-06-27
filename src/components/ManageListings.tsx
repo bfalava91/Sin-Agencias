@@ -7,6 +7,8 @@ import { ArrowLeft, Edit, Eye, Trash2, Upload, Play } from "lucide-react";
 import { useListings } from "@/hooks/useListings";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import CreateListing from "./CreateListing";
+import ListingView from "./ListingView";
 
 interface ManageListingsProps {
   onBack: () => void;
@@ -14,10 +16,12 @@ interface ManageListingsProps {
 }
 
 const ManageListings = ({ onBack, onCreateNew }: ManageListingsProps) => {
-  const { fetchUserListings } = useListings();
+  const { fetchUserListings, fetchSingleListing } = useListings();
   const { toast } = useToast();
   const [listings, setListings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'view' | 'edit'>('list');
 
   useEffect(() => {
     loadListings();
@@ -39,6 +43,40 @@ const ManageListings = ({ onBack, onCreateNew }: ManageListingsProps) => {
     setIsLoading(false);
   };
 
+  const handleViewListing = async (listingId: string) => {
+    const result = await fetchSingleListing(listingId);
+    if (result.success) {
+      setSelectedListing(result.data);
+      setViewMode('view');
+    } else {
+      toast({
+        title: "Error al cargar anuncio",
+        description: "No se pudo cargar el anuncio seleccionado.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditListing = async (listingId: string) => {
+    const result = await fetchSingleListing(listingId);
+    if (result.success) {
+      setSelectedListing(result.data);
+      setViewMode('edit');
+    } else {
+      toast({
+        title: "Error al cargar anuncio",
+        description: "No se pudo cargar el anuncio para editar.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setSelectedListing(null);
+    loadListings(); // Reload listings to reflect any changes
+  };
+
   const publishListing = async (listingId: string) => {
     try {
       const { error } = await supabase
@@ -53,7 +91,6 @@ const ManageListings = ({ onBack, onCreateNew }: ManageListingsProps) => {
         description: "Tu anuncio está ahora activo y visible para inquilinos.",
       });
 
-      // Reload listings to reflect the change
       loadListings();
     } catch (error: any) {
       console.error('Error publishing listing:', error);
@@ -138,6 +175,28 @@ const ManageListings = ({ onBack, onCreateNew }: ManageListingsProps) => {
     return 'Precio no especificado';
   };
 
+  // Render edit mode
+  if (viewMode === 'edit' && selectedListing) {
+    return (
+      <CreateListing 
+        onBack={handleBackToList}
+        editingListing={selectedListing}
+      />
+    );
+  }
+
+  // Render view mode
+  if (viewMode === 'view' && selectedListing) {
+    return (
+      <ListingView 
+        listing={selectedListing}
+        onBack={handleBackToList}
+        onEdit={() => setViewMode('edit')}
+      />
+    );
+  }
+
+  // Render list mode
   if (isLoading) {
     return (
       <div className="p-6 text-center">
@@ -236,11 +295,19 @@ const ManageListings = ({ onBack, onCreateNew }: ManageListingsProps) => {
                 )}
 
                 <div className="flex space-x-2 flex-wrap gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleViewListing(listing.id)}
+                  >
                     <Eye className="mr-2 h-4 w-4" />
                     Ver
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleEditListing(listing.id)}
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Editar
                   </Button>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,19 +7,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Loader2, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useListings, ListingFormData } from "@/hooks/useListings";
+import ListingPreview from "./ListingPreview";
 
 interface CreateListingProps {
   onBack: () => void;
+  editingListing?: any;
 }
 
-const CreateListing = ({ onBack }: CreateListingProps) => {
+const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
   const { user } = useAuth();
-  const { createListing, checkUserHasListings, isLoading } = useListings();
+  const { createListing, updateListing, checkUserHasListings, isLoading } = useListings();
   const [hasExistingListings, setHasExistingListings] = useState(false);
   const [showReadvertisingQuestion, setShowReadvertisingQuestion] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [formData, setFormData] = useState<ListingFormData>({
     isReadvertising: false,
     postcode: "",
@@ -34,6 +38,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     furnishing: "",
     description: "",
     monthlyRent: "",
+    weeklyRent: "",
     deposit: "",
     minTenancy: "",
     maxTenants: "",
@@ -44,6 +49,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     fireplace: false,
     studentsAllowed: false,
     familiesAllowed: false,
+    dssAccepted: false,
     petsAllowed: false,
     smokersAllowed: false,
     studentsOnly: false,
@@ -65,16 +71,68 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
   });
 
   useEffect(() => {
-    const checkExistingListings = async () => {
-      if (user) {
-        const hasListings = await checkUserHasListings();
-        setHasExistingListings(hasListings);
-        setShowReadvertisingQuestion(hasListings);
+    // If editing, populate form with existing data
+    if (editingListing) {
+      setFormData({
+        isReadvertising: editingListing.is_readvertising || false,
+        postcode: editingListing.postcode || "",
+        flatNumber: editingListing.flat_number || "",
+        addressLine2: editingListing.address_line_2 || "",
+        addressLine3: editingListing.address_line_3 || "",
+        town: editingListing.town || "",
+        neighborhood: editingListing.neighborhood || "",
+        advertType: editingListing.advert_type || "",
+        propertyType: editingListing.property_type || "",
+        bedrooms: editingListing.bedrooms ? editingListing.bedrooms.toString() : "",
+        bathrooms: editingListing.bathrooms ? editingListing.bathrooms.toString() : "",
+        furnishing: editingListing.furnishing || "",
+        description: editingListing.description || "",
+        monthlyRent: editingListing.monthly_rent ? editingListing.monthly_rent.toString() : "",
+        weeklyRent: editingListing.weekly_rent ? editingListing.weekly_rent.toString() : "",
+        deposit: editingListing.deposit || "",
+        minTenancy: editingListing.min_tenancy ? editingListing.min_tenancy.toString() : "",
+        maxTenants: editingListing.max_tenants ? editingListing.max_tenants.toString() : "",
+        moveInDate: editingListing.move_in_date || "",
+        billsIncluded: editingListing.bills_included || false,
+        gardenAccess: editingListing.garden_access || false,
+        parking: editingListing.parking || false,
+        fireplace: editingListing.fireplace || false,
+        studentsAllowed: editingListing.students_allowed || false,
+        familiesAllowed: editingListing.families_allowed || false,
+        dssAccepted: editingListing.dss_accepted || false,
+        petsAllowed: editingListing.pets_allowed || false,
+        smokersAllowed: editingListing.smokers_allowed || false,
+        studentsOnly: editingListing.students_only || false,
+        availability: editingListing.availability || "",
+        remoteViewings: editingListing.remote_viewings || false,
+        youtubeUrl: editingListing.youtube_url || "",
+        features: editingListing.features || "",
+        agreedToTerms: true // Already agreed when creating
+      });
+
+      // Parse features into individual fields
+      if (editingListing.features) {
+        const featuresArray = editingListing.features.split('\n').filter(f => f.trim());
+        const newFeatureFields = { ...featureFields };
+        featuresArray.forEach((feature, index) => {
+          if (index < 6) {
+            newFeatureFields[`feature${index + 1}` as keyof typeof featureFields] = feature.trim();
+          }
+        });
+        setFeatureFields(newFeatureFields);
       }
-    };
-    
-    checkExistingListings();
-  }, [user, checkUserHasListings]);
+    } else {
+      // Check for existing listings only if not editing
+      const checkExistingListings = async () => {
+        if (user) {
+          const hasListings = await checkUserHasListings();
+          setHasExistingListings(hasListings);
+          setShowReadvertisingQuestion(hasListings);
+        }
+      };
+      checkExistingListings();
+    }
+  }, [user, editingListing, checkUserHasListings]);
 
   const handleInputChange = (field: keyof ListingFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -92,9 +150,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
   const handleSubmit = async (e: React.FormEvent, publish = false) => {
     e.preventDefault();
     
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     if (publish && !formData.agreedToTerms) {
       console.log('Must agree to terms to publish');
@@ -103,12 +159,32 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
 
     console.log('Submitting form with data:', formData);
     
-    const result = await createListing(formData, publish);
+    let result;
+    if (editingListing) {
+      result = await updateListing(editingListing.id, formData, publish);
+    } else {
+      result = await createListing(formData, publish);
+    }
     
     if (result.success) {
       onBack();
     }
   };
+
+  const handlePreview = () => {
+    setShowPreview(true);
+  };
+
+  if (showPreview) {
+    return (
+      <ListingPreview 
+        formData={formData}
+        onBack={() => setShowPreview(false)}
+        onPublish={() => handleSubmit(new Event('submit') as any, true)}
+        isLoading={isLoading}
+      />
+    );
+  }
 
   if (!user) {
     return (
@@ -138,7 +214,9 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
       </Button>
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Crear Nuevo Anuncio</h1>
+        <h1 className="text-3xl font-bold mb-2">
+          {editingListing ? 'Editar Anuncio' : 'Crear Nuevo Anuncio'}
+        </h1>
         <div className="flex items-center space-x-4 text-sm text-gray-600">
           <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
             1. Detalles de la Propiedad
@@ -149,8 +227,8 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
       </div>
 
       <form className="space-y-8">
-        {/* Re-advertising Question - Only show if user has existing listings */}
-        {showReadvertisingQuestion && (
+        {/* Re-advertising Question - Only show if user has existing listings and not editing */}
+        {showReadvertisingQuestion && !editingListing && (
           <Card>
             <CardHeader>
               <CardTitle>¿Vuelves a anunciar con nosotros?</CardTitle>
@@ -394,6 +472,20 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               </div>
               
               <div>
+                <Label htmlFor="weeklyRent">Alquiler Semanal (€)</Label>
+                <Input
+                  id="weeklyRent"
+                  type="number"
+                  value={formData.weeklyRent}
+                  onChange={(e) => handleInputChange("weeklyRent", e.target.value)}
+                  placeholder="300"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <Label>Cantidad de Fianza</Label>
                 <Select 
                   value={formData.deposit} 
@@ -412,9 +504,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
               <div>
                 <Label htmlFor="minTenancy">Duración Mínima de Alquiler (meses)</Label>
                 <Input
@@ -426,7 +516,9 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   disabled={isLoading}
                 />
               </div>
-              
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="maxTenants">Número Máximo de Inquilinos</Label>
                 <Input
@@ -438,17 +530,17 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   disabled={isLoading}
                 />
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="moveInDate">Fecha de Entrada Más Temprana</Label>
-              <Input
-                id="moveInDate"
-                type="date"
-                value={formData.moveInDate}
-                onChange={(e) => handleInputChange("moveInDate", e.target.value)}
-                disabled={isLoading}
-              />
+              
+              <div>
+                <Label htmlFor="moveInDate">Fecha de Entrada Más Temprana</Label>
+                <Input
+                  id="moveInDate"
+                  type="date"
+                  value={formData.moveInDate}
+                  onChange={(e) => handleInputChange("moveInDate", e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -511,6 +603,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               {[
                 { id: "studentsAllowed", label: "Estudiantes Permitidos" },
                 { id: "familiesAllowed", label: "Familias Permitidas" },
+                { id: "dssAccepted", label: "DSS Aceptado" },
                 { id: "petsAllowed", label: "Mascotas Permitidas" },
                 { id: "smokersAllowed", label: "Fumadores Permitidos" },
                 { id: "studentsOnly", label: "Solo Estudiantes" },
@@ -586,27 +679,29 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
           </CardContent>
         </Card>
 
-        {/* Terms */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Términos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-start space-x-2">
-              <Checkbox
-                id="terms"
-                checked={formData.agreedToTerms}
-                onCheckedChange={(checked) => handleInputChange("agreedToTerms", checked)}
-                disabled={isLoading}
-              />
-              <Label htmlFor="terms" className="text-sm">
-                Confirmo que no cobro tasas administrativas a los inquilinos, que no soy una agencia, 
-                el propietario de esta propiedad y tengo derecho a ofrecerla en alquiler, y acepto 
-                los Términos y Condiciones y la Política de Privacidad de Sin Agencias.
-              </Label>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Terms - Only show if not editing */}
+        {!editingListing && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Términos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="terms"
+                  checked={formData.agreedToTerms}
+                  onCheckedChange={(checked) => handleInputChange("agreedToTerms", checked)}
+                  disabled={isLoading}
+                />
+                <Label htmlFor="terms" className="text-sm">
+                  Confirmo que no cobro tasas administrativas a los inquilinos, que no soy una agencia, 
+                  el propietario de esta propiedad y tengo derecho a ofrecerla en alquiler, y acepto 
+                  los Términos y Condiciones y la Política de Privacidad de Sin Agencias.
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action Buttons */}
         <div className="flex space-x-4">
@@ -626,21 +721,35 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               'Guardar como Borrador'
             )}
           </Button>
+          
           <Button 
             type="button"
-            onClick={(e) => handleSubmit(e, true)}
+            onClick={handlePreview}
+            variant="secondary"
             className="flex-1"
-            disabled={isLoading || !formData.agreedToTerms}
+            disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Publicando...
-              </>
-            ) : (
-              'Publicar Anuncio'
-            )}
+            <Eye className="mr-2 h-4 w-4" />
+            Vista Previa
           </Button>
+          
+          {editingListing && editingListing.status === 'active' && (
+            <Button 
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              className="flex-1"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Actualizando...
+                </>
+              ) : (
+                'Actualizar Anuncio'
+              )}
+            </Button>
+          )}
         </div>
       </form>
     </div>

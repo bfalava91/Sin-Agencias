@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +19,7 @@ export interface ListingFormData {
   furnishing: string;
   description: string;
   monthlyRent: string;
+  weeklyRent: string;
   deposit: string;
   minTenancy: string;
   maxTenants: string;
@@ -28,6 +30,7 @@ export interface ListingFormData {
   fireplace: boolean;
   studentsAllowed: boolean;
   familiesAllowed: boolean;
+  dssAccepted: boolean;
   petsAllowed: boolean;
   smokersAllowed: boolean;
   studentsOnly: boolean;
@@ -67,13 +70,13 @@ export const useListings = () => {
         return { success: false, error: "Missing required fields" };
       }
       
-      if (!formData.monthlyRent) {
+      if (!formData.monthlyRent && !formData.weeklyRent) {
         toast({
           title: "Campo obligatorio faltante",
-          description: "Debes especificar el alquiler mensual",
+          description: "Debes especificar el alquiler mensual o semanal",
           variant: "destructive",
         });
-        return { success: false, error: "Missing monthly rent" };
+        return { success: false, error: "Missing rent information" };
       }
     }
 
@@ -96,6 +99,7 @@ export const useListings = () => {
         furnishing: formData.furnishing || null,
         description: formData.description || null,
         monthly_rent: formData.monthlyRent ? parseFloat(formData.monthlyRent) : null,
+        weekly_rent: formData.weeklyRent ? parseFloat(formData.weeklyRent) : null,
         deposit: formData.deposit || null,
         min_tenancy: formData.minTenancy ? parseInt(formData.minTenancy) : null,
         max_tenants: formData.maxTenants ? parseInt(formData.maxTenants) : null,
@@ -106,6 +110,7 @@ export const useListings = () => {
         fireplace: formData.fireplace,
         students_allowed: formData.studentsAllowed,
         families_allowed: formData.familiesAllowed,
+        dss_accepted: formData.dssAccepted,
         pets_allowed: formData.petsAllowed,
         smokers_allowed: formData.smokersAllowed,
         students_only: formData.studentsOnly,
@@ -152,6 +157,119 @@ export const useListings = () => {
     }
   };
 
+  const updateListing = async (listingId: string, formData: ListingFormData, publish = false) => {
+    if (!user) {
+      toast({
+        title: "Error de autenticación",
+        description: "Debes iniciar sesión para actualizar un anuncio",
+        variant: "destructive",
+      });
+      return { success: false, error: "No authenticated user" };
+    }
+
+    // Validation for required fields when publishing
+    if (publish) {
+      const requiredFields = ['postcode', 'town', 'advertType', 'propertyType', 'bedrooms', 'bathrooms', 'furnishing'];
+      const missingFields = requiredFields.filter(field => !formData[field as keyof ListingFormData]);
+      
+      if (missingFields.length > 0) {
+        toast({
+          title: "Campos obligatorios faltantes",
+          description: `Por favor completa los siguientes campos: ${missingFields.join(', ')}`,
+          variant: "destructive",
+        });
+        return { success: false, error: "Missing required fields" };
+      }
+      
+      if (!formData.monthlyRent && !formData.weeklyRent) {
+        toast({
+          title: "Campo obligatorio faltante",
+          description: "Debes especificar el alquiler mensual o semanal",
+          variant: "destructive",
+        });
+        return { success: false, error: "Missing rent information" };
+      }
+    }
+
+    setIsLoading(true);
+
+    try {
+      const listingData = {
+        is_readvertising: formData.isReadvertising,
+        postcode: formData.postcode || null,
+        flat_number: formData.flatNumber || null,
+        address_line_2: formData.addressLine2 || null,
+        address_line_3: formData.addressLine3 || null,
+        town: formData.town || null,
+        neighborhood: formData.neighborhood || null,
+        advert_type: formData.advertType || null,
+        property_type: formData.propertyType || null,
+        bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
+        bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
+        furnishing: formData.furnishing || null,
+        description: formData.description || null,
+        monthly_rent: formData.monthlyRent ? parseFloat(formData.monthlyRent) : null,
+        weekly_rent: formData.weeklyRent ? parseFloat(formData.weeklyRent) : null,
+        deposit: formData.deposit || null,
+        min_tenancy: formData.minTenancy ? parseInt(formData.minTenancy) : null,
+        max_tenants: formData.maxTenants ? parseInt(formData.maxTenants) : null,
+        move_in_date: formData.moveInDate || null,
+        bills_included: formData.billsIncluded,
+        garden_access: formData.gardenAccess,
+        parking: formData.parking,
+        fireplace: formData.fireplace,
+        students_allowed: formData.studentsAllowed,
+        families_allowed: formData.familiesAllowed,
+        dss_accepted: formData.dssAccepted,
+        pets_allowed: formData.petsAllowed,
+        smokers_allowed: formData.smokersAllowed,
+        students_only: formData.studentsOnly,
+        availability: formData.availability || null,
+        remote_viewings: formData.remoteViewings,
+        youtube_url: formData.youtubeUrl || null,
+        features: formData.features || null,
+        status: publish ? 'active' : 'draft',
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Updating listing with data:', listingData);
+
+      const { data, error } = await supabase
+        .from('listings')
+        .update(listingData)
+        .eq('id', listingId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Listing updated successfully:', data);
+
+      toast({
+        title: publish ? "¡Anuncio actualizado y publicado!" : "¡Anuncio actualizado como borrador!",
+        description: publish ? "Tu anuncio actualizado está activo y visible para inquilinos." : "Tu anuncio ha sido actualizado y guardado como borrador.",
+      });
+
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('Error updating listing:', error);
+      
+      toast({
+        title: "Error al actualizar el anuncio",
+        description: error.message || "Ha ocurrido un error inesperado. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+
+      return { success: false, error: error.message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const fetchUserListings = async () => {
     if (!user) return { success: false, error: "No authenticated user" };
 
@@ -167,6 +285,26 @@ export const useListings = () => {
       return { success: true, data };
     } catch (error: any) {
       console.error('Error fetching listings:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const fetchSingleListing = async (listingId: string) => {
+    if (!user) return { success: false, error: "No authenticated user" };
+
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('id', listingId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('Error fetching listing:', error);
       return { success: false, error: error.message };
     }
   };
@@ -192,7 +330,9 @@ export const useListings = () => {
 
   return {
     createListing,
+    updateListing,
     fetchUserListings,
+    fetchSingleListing,
     checkUserHasListings,
     isLoading
   };
