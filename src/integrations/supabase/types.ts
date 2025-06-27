@@ -23,6 +23,7 @@ export type Database = {
           description: string | null
           dss_accepted: boolean | null
           families_allowed: boolean | null
+          features: string | null
           fireplace: boolean | null
           flat_number: string | null
           furnishing: string | null
@@ -62,6 +63,7 @@ export type Database = {
           description?: string | null
           dss_accepted?: boolean | null
           families_allowed?: boolean | null
+          features?: string | null
           fireplace?: boolean | null
           flat_number?: string | null
           furnishing?: string | null
@@ -101,6 +103,7 @@ export type Database = {
           description?: string | null
           dss_accepted?: boolean | null
           families_allowed?: boolean | null
+          features?: string | null
           fireplace?: boolean | null
           flat_number?: string | null
           furnishing?: string | null
