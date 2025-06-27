@@ -1,11 +1,51 @@
 
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 import LanguageToggle from "./LanguageToggle";
 
 const Navbar = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleFindProperty = () => {
+    navigate('/search');
+  };
+
+  const handleListProperty = () => {
+    toast({
+      title: "Próximamente",
+      description: "La funcionalidad para publicar propiedades estará disponible pronto.",
+    });
+  };
+
+  const handleHowItWorks = () => {
+    toast({
+      title: "Próximamente",
+      description: "La página 'Cómo Funciona' estará disponible pronto.",
+    });
+  };
+
+  const handleSignIn = () => {
+    toast({
+      title: "Próximamente",
+      description: "El sistema de autenticación estará disponible pronto.",
+    });
+  };
+
+  const handleSignUp = () => {
+    toast({
+      title: "Próximamente",
+      description: "El registro de usuarios estará disponible pronto.",
+    });
+  };
+
+  const handleHome = () => {
+    navigate('/');
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -13,29 +53,43 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-blue-600">Sin Agencias</h1>
+              <h1 
+                className="text-2xl font-bold text-blue-600 cursor-pointer" 
+                onClick={handleHome}
+              >
+                Sin Agencias
+              </h1>
             </div>
             <div className="hidden md:block ml-10">
               <div className="flex items-baseline space-x-8">
-                <a href="#" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">
+                <button 
+                  onClick={handleFindProperty}
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                >
                   {t('nav.findProperty')}
-                </a>
-                <a href="#" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">
+                </button>
+                <button 
+                  onClick={handleListProperty}
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                >
                   {t('nav.listProperty')}
-                </a>
-                <a href="#" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">
+                </button>
+                <button 
+                  onClick={handleHowItWorks}
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                >
                   {t('nav.howItWorks')}
-                </a>
+                </button>
               </div>
             </div>
           </div>
           
           <div className="hidden md:flex items-center space-x-4">
             <LanguageToggle />
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleSignIn}>
               {t('nav.signIn')}
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleSignUp}>
               {t('nav.signUp')}
             </Button>
           </div>

@@ -1,5 +1,6 @@
 
 import PropertyCard from "./PropertyCard";
+import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const properties = [
@@ -13,7 +14,8 @@ const properties = [
     area: 70,
     image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
     featured: true,
-    available: "Disponible Ahora"
+    available: "Disponible Ahora",
+    type: "flat"
   },
   {
     id: 2,
@@ -25,7 +27,8 @@ const properties = [
     area: 95,
     image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop",
     featured: true,
-    available: "Disponible 15 Ene"
+    available: "Disponible 15 Ene",
+    type: "flat"
   },
   {
     id: 3,
@@ -37,7 +40,8 @@ const properties = [
     area: 42,
     image: "https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=400&h=300&fit=crop",
     featured: false,
-    available: "Disponible Ahora"
+    available: "Disponible Ahora",
+    type: "studio"
   },
   {
     id: 4,
@@ -49,7 +53,8 @@ const properties = [
     area: 88,
     image: "https://images.unsplash.com/photo-1524230572899-a752b3835840?w=400&h=300&fit=crop",
     featured: true,
-    available: "Disponible 1 Feb"
+    available: "Disponible 1 Feb",
+    type: "flat"
   },
   {
     id: 5,
@@ -61,7 +66,8 @@ const properties = [
     area: 74,
     image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
     featured: false,
-    available: "Disponible Ahora"
+    available: "Disponible Ahora",
+    type: "flat"
   },
   {
     id: 6,
@@ -73,12 +79,18 @@ const properties = [
     area: 56,
     image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop",
     featured: false,
-    available: "Disponible 10 Feb"
+    available: "Disponible 10 Feb",
+    type: "studio"
   }
 ];
 
 const FeaturedProperties = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  const handleViewAll = () => {
+    navigate('/search');
+  };
 
   return (
     <section className="py-16 bg-gray-50">
@@ -99,7 +111,10 @@ const FeaturedProperties = () => {
         </div>
         
         <div className="text-center mt-12">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors">
+          <button 
+            onClick={handleViewAll}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+          >
             {t('featured.viewAll')}
           </button>
         </div>

@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Bed, Bath, Square, MapPin, Heart } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Property {
   id: number;
@@ -17,6 +19,7 @@ interface Property {
   image: string;
   featured: boolean;
   available: string;
+  type?: string;
 }
 
 interface PropertyCardProps {
@@ -26,9 +29,35 @@ interface PropertyCardProps {
 const PropertyCard = ({ property }: PropertyCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsLiked(!isLiked);
+    toast({
+      title: isLiked ? "Eliminado de favoritos" : "Añadido a favoritos",
+      description: isLiked 
+        ? `${property.title} eliminada de tus favoritos`
+        : `${property.title} añadida a tus favoritos`,
+    });
+  };
+
+  const handleViewDetails = () => {
+    navigate(`/property/${property.id}`);
+  };
+
+  const handleContact = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Simular contacto con el propietario
+    toast({
+      title: "Contactando propietario",
+      description: `Te pondremos en contacto para ${property.title}`,
+    });
+  };
 
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden border-0 shadow-md">
+    <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden border-0 shadow-md cursor-pointer" onClick={handleViewDetails}>
       <div className="relative">
         <img 
           src={property.image}
@@ -43,7 +72,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           )}
         </div>
         <button 
-          onClick={() => setIsLiked(!isLiked)}
+          onClick={handleLike}
           className="absolute top-3 right-3 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
         >
           <Heart 
@@ -91,10 +120,20 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         </div>
         
         <div className="flex space-x-2">
-          <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
+          <Button 
+            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewDetails();
+            }}
+          >
             {t('featured.viewDetails')}
           </Button>
-          <Button variant="outline" className="flex-1">
+          <Button 
+            variant="outline" 
+            className="flex-1"
+            onClick={handleContact}
+          >
             {t('featured.contact')}
           </Button>
         </div>

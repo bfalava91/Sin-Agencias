@@ -1,11 +1,29 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const [location, setLocation] = useState('');
+  const [propertyType, setPropertyType] = useState('any');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const searchParams = new URLSearchParams();
+    
+    if (location.trim()) {
+      searchParams.set('location', location.trim());
+    }
+    if (propertyType !== 'any') {
+      searchParams.set('type', propertyType);
+    }
+    
+    navigate(`/search?${searchParams.toString()}`);
+  };
 
   return (
     <section className="relative bg-gradient-to-br from-blue-50 to-green-50 py-20">
@@ -19,30 +37,36 @@ const Hero = () => {
             {t('hero.subtitle')}
           </p>
           
-          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+          <form onSubmit={handleSearch} className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input 
                   placeholder={t('hero.locationPlaceholder')} 
                   className="pl-10 h-12 text-lg"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
                 />
               </div>
               <div className="flex-1">
-                <select className="w-full h-12 px-4 border border-gray-300 rounded-md text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                  <option>{t('hero.propertyType')}</option>
-                  <option>{t('hero.house')}</option>
-                  <option>{t('hero.flat')}</option>
-                  <option>{t('hero.studio')}</option>
-                  <option>{t('hero.room')}</option>
+                <select 
+                  className="w-full h-12 px-4 border border-gray-300 rounded-md text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                >
+                  <option value="any">{t('hero.propertyType')}</option>
+                  <option value="house">{t('hero.house')}</option>
+                  <option value="flat">{t('hero.flat')}</option>
+                  <option value="studio">{t('hero.studio')}</option>
+                  <option value="room">{t('hero.room')}</option>
                 </select>
               </div>
-              <Button size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700">
+              <Button type="submit" size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700">
                 <Search className="mr-2 h-5 w-5" />
                 {t('hero.searchProperties')}
               </Button>
             </div>
-          </div>
+          </form>
           
           <div className="mt-8 flex justify-center space-x-8 text-sm text-gray-600">
             <div className="flex items-center">
