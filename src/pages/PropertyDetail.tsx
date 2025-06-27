@@ -118,7 +118,7 @@ const PropertyDetail = () => {
         // Handle the case where profiles might be null or have an error
         const listingWithProfiles = {
           ...data,
-          profiles: data.profiles && typeof data.profiles === 'object' && 'full_name' in data.profiles 
+          profiles: data.profiles && typeof data.profiles === 'object' && !Array.isArray(data.profiles) && 'full_name' in data.profiles 
             ? data.profiles 
             : undefined
         };
