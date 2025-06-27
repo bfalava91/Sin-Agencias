@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,16 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Upload } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Upload, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useListings, ListingFormData } from "@/hooks/useListings";
 
 interface CreateListingProps {
   onBack: () => void;
 }
 
 const CreateListing = ({ onBack }: CreateListingProps) => {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const { user } = useAuth();
+  const { createListing, isLoading } = useListings();
+  const [formData, setFormData] = useState<ListingFormData>({
     isReadvertising: false,
     postcode: "",
     flatNumber: "",
@@ -47,31 +48,64 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     studentsOnly: false,
     availability: "",
     remoteViewings: false,
-    youtubeUrl: "",
-    agreedToTerms: false
+    youtubeUrl: ""
   });
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = (field: keyof ListingFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.agreedToTerms) {
-      toast({
-        title: "Error",
-        description: "Debes aceptar los términos y condiciones",
-        variant: "destructive",
-      });
-      return;
+  const validateForm = () => {
+    const requiredFields = ['postcode', 'town', 'advertType', 'propertyType', 'bedrooms', 'bathrooms', 'furnishing'];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof ListingFormData]);
+    
+    if (missingFields.length > 0) {
+      return `Por favor completa los siguientes campos obligatorios: ${missingFields.join(', ')}`;
     }
     
-    toast({
-      title: "Anuncio creado",
-      description: "Tu anuncio ha sido creado exitosamente",
-    });
-    onBack();
+    if (!formData.monthlyRent && !formData.weeklyRent) {
+      return "Debes especificar al menos el alquiler mensual o semanal";
+    }
+    
+    return null;
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      return;
+    }
+
+    const validationError = validateForm();
+    if (validationError) {
+      console.log('Validation error:', validationError);
+      return;
+    }
+
+    console.log('Submitting form with data:', formData);
+    
+    const result = await createListing(formData);
+    
+    if (result.success) {
+      onBack();
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 text-center">
+        <h1 className="text-3xl font-bold mb-4">Acceso Restringido</h1>
+        <p className="text-gray-600 mb-6">
+          Debes iniciar sesión para crear un anuncio de propiedad.
+        </p>
+        <Button onClick={onBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver al Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -79,6 +113,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
         variant="ghost" 
         onClick={onBack}
         className="mb-6 flex items-center"
+        disabled={isLoading}
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Volver al Dashboard
@@ -112,6 +147,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 type="button" 
                 variant={formData.isReadvertising ? "default" : "outline"}
                 onClick={() => handleInputChange("isReadvertising", true)}
+                disabled={isLoading}
               >
                 Sí - Busco volver a anunciar
               </Button>
@@ -119,6 +155,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 type="button" 
                 variant={!formData.isReadvertising ? "default" : "outline"}
                 onClick={() => handleInputChange("isReadvertising", false)}
+                disabled={isLoading}
               >
                 No - Este es un nuevo anuncio
               </Button>
@@ -129,20 +166,22 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
         {/* Property Details */}
         <Card>
           <CardHeader>
-            <CardTitle>Detalles de la Propiedad</CardTitle>
+            <CardTitle>Detalles de la Propiedad *</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="postcode">Código Postal</Label>
+                <Label htmlFor="postcode">Código Postal *</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="postcode"
                     value={formData.postcode}
                     onChange={(e) => handleInputChange("postcode", e.target.value)}
                     placeholder="Ej: 28001"
+                    required
+                    disabled={isLoading}
                   />
-                  <Button type="button" variant="outline">
+                  <Button type="button" variant="outline" disabled={isLoading}>
                     Buscar Dirección
                   </Button>
                 </div>
@@ -155,6 +194,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   value={formData.flatNumber}
                   onChange={(e) => handleInputChange("flatNumber", e.target.value)}
                   placeholder="Ej: 2A"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -166,6 +206,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   id="addressLine2"
                   value={formData.addressLine2}
                   onChange={(e) => handleInputChange("addressLine2", e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               
@@ -175,24 +216,31 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   id="addressLine3"
                   value={formData.addressLine3}
                   onChange={(e) => handleInputChange("addressLine3", e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="town">Ciudad</Label>
+              <Label htmlFor="town">Ciudad *</Label>
               <Input
                 id="town"
                 value={formData.town}
                 onChange={(e) => handleInputChange("town", e.target.value)}
                 placeholder="Ej: Madrid"
+                required
+                disabled={isLoading}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Tipo de Anuncio</Label>
-                <Select value={formData.advertType} onValueChange={(value) => handleInputChange("advertType", value)}>
+                <Label>Tipo de Anuncio *</Label>
+                <Select 
+                  value={formData.advertType} 
+                  onValueChange={(value) => handleInputChange("advertType", value)}
+                  disabled={isLoading}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
@@ -204,8 +252,12 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               </div>
               
               <div>
-                <Label>Tipo de Propiedad</Label>
-                <Select value={formData.propertyType} onValueChange={(value) => handleInputChange("propertyType", value)}>
+                <Label>Tipo de Propiedad *</Label>
+                <Select 
+                  value={formData.propertyType} 
+                  onValueChange={(value) => handleInputChange("propertyType", value)}
+                  disabled={isLoading}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
@@ -226,8 +278,12 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label>Número de Dormitorios</Label>
-                <Select value={formData.bedrooms} onValueChange={(value) => handleInputChange("bedrooms", value)}>
+                <Label>Número de Dormitorios *</Label>
+                <Select 
+                  value={formData.bedrooms} 
+                  onValueChange={(value) => handleInputChange("bedrooms", value)}
+                  disabled={isLoading}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
@@ -240,8 +296,12 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               </div>
               
               <div>
-                <Label>Número de Baños</Label>
-                <Select value={formData.bathrooms} onValueChange={(value) => handleInputChange("bathrooms", value)}>
+                <Label>Número de Baños *</Label>
+                <Select 
+                  value={formData.bathrooms} 
+                  onValueChange={(value) => handleInputChange("bathrooms", value)}
+                  disabled={isLoading}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
@@ -254,8 +314,12 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               </div>
               
               <div>
-                <Label>Amueblado</Label>
-                <Select value={formData.furnishing} onValueChange={(value) => handleInputChange("furnishing", value)}>
+                <Label>Amueblado *</Label>
+                <Select 
+                  value={formData.furnishing} 
+                  onValueChange={(value) => handleInputChange("furnishing", value)}
+                  disabled={isLoading}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
@@ -276,12 +340,13 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 onChange={(e) => handleInputChange("description", e.target.value)}
                 rows={6}
                 placeholder="Describe tu propiedad..."
+                disabled={isLoading}
               />
               <div className="flex space-x-2 mt-2">
-                <Button type="button" variant="outline" size="sm">
+                <Button type="button" variant="outline" size="sm" disabled={isLoading}>
                   Escribir Descripción Ahora
                 </Button>
-                <Button type="button" variant="outline" size="sm">
+                <Button type="button" variant="outline" size="sm" disabled={isLoading}>
                   Generar Descripción Inteligente
                 </Button>
               </div>
@@ -304,6 +369,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   value={formData.monthlyRent}
                   onChange={(e) => handleInputChange("monthlyRent", e.target.value)}
                   placeholder="1200"
+                  disabled={isLoading}
                 />
               </div>
               
@@ -315,6 +381,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   value={formData.weeklyRent}
                   onChange={(e) => handleInputChange("weeklyRent", e.target.value)}
                   placeholder="300"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -322,7 +389,11 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Cantidad de Fianza</Label>
-                <Select value={formData.deposit} onValueChange={(value) => handleInputChange("deposit", value)}>
+                <Select 
+                  value={formData.deposit} 
+                  onValueChange={(value) => handleInputChange("deposit", value)}
+                  disabled={isLoading}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
@@ -344,6 +415,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   value={formData.minTenancy}
                   onChange={(e) => handleInputChange("minTenancy", e.target.value)}
                   placeholder="12"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -357,6 +429,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   value={formData.maxTenants}
                   onChange={(e) => handleInputChange("maxTenants", e.target.value)}
                   placeholder="2"
+                  disabled={isLoading}
                 />
               </div>
               
@@ -367,6 +440,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   type="date"
                   value={formData.moveInDate}
                   onChange={(e) => handleInputChange("moveInDate", e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -389,8 +463,9 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 <div key={feature.id} className="flex items-center space-x-2">
                   <Checkbox
                     id={feature.id}
-                    checked={formData[feature.id as keyof typeof formData] as boolean}
-                    onCheckedChange={(checked) => handleInputChange(feature.id, checked)}
+                    checked={formData[feature.id as keyof ListingFormData] as boolean}
+                    onCheckedChange={(checked) => handleInputChange(feature.id as keyof ListingFormData, checked)}
+                    disabled={isLoading}
                   />
                   <Label htmlFor={feature.id}>{feature.label}</Label>
                 </div>
@@ -417,8 +492,9 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 <div key={preference.id} className="flex items-center space-x-2">
                   <Checkbox
                     id={preference.id}
-                    checked={formData[preference.id as keyof typeof formData] as boolean}
-                    onCheckedChange={(checked) => handleInputChange(preference.id, checked)}
+                    checked={formData[preference.id as keyof ListingFormData] as boolean}
+                    onCheckedChange={(checked) => handleInputChange(preference.id as keyof ListingFormData, checked)}
+                    disabled={isLoading}
                   />
                   <Label htmlFor={preference.id}>{preference.label}</Label>
                 </div>
@@ -439,6 +515,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 onChange={(e) => handleInputChange("availability", e.target.value)}
                 rows={3}
                 placeholder="Describe tu disponibilidad para mostrar la propiedad..."
+                disabled={isLoading}
               />
             </div>
             
@@ -447,6 +524,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 id="remoteViewings"
                 checked={formData.remoteViewings}
                 onCheckedChange={(checked) => handleInputChange("remoteViewings", checked)}
+                disabled={isLoading}
               />
               <Label htmlFor="remoteViewings">Visitas por Video Remotas</Label>
             </div>
@@ -464,7 +542,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               <p className="text-gray-600 mb-4">
                 Arrastra una foto aquí, o haz clic en "Añadir Fotos" para seleccionar tus fotos
               </p>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" disabled={isLoading}>
                 Añadir Fotos
               </Button>
             </div>
@@ -476,6 +554,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 value={formData.youtubeUrl}
                 onChange={(e) => handleInputChange("youtubeUrl", e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
+                disabled={isLoading}
               />
             </div>
           </CardContent>
@@ -504,10 +583,61 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
 
         {/* Action Buttons */}
         <div className="flex space-x-4">
-          <Button type="submit" className="flex-1">
-            Guardar
+          <Button 
+            type="submit" 
+            className="flex-1"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              'Guardar Anuncio'
+            )}
           </Button>
-          <Button type="button" variant="outline" className="flex-1">
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => {
+              setFormData({
+                isReadvertising: false,
+                postcode: "",
+                flatNumber: "",
+                addressLine2: "",
+                addressLine3: "",
+                town: "",
+                advertType: "",
+                propertyType: "",
+                bedrooms: "",
+                bathrooms: "",
+                furnishing: "",
+                description: "",
+                monthlyRent: "",
+                weeklyRent: "",
+                deposit: "",
+                minTenancy: "",
+                maxTenants: "",
+                moveInDate: "",
+                billsIncluded: false,
+                gardenAccess: false,
+                parking: false,
+                fireplace: false,
+                studentsAllowed: false,
+                familiesAllowed: false,
+                dssAccepted: false,
+                petsAllowed: false,
+                smokersAllowed: false,
+                studentsOnly: false,
+                availability: "",
+                remoteViewings: false,
+                youtubeUrl: ""
+              });
+            }}
+            disabled={isLoading}
+          >
             Restablecer
           </Button>
         </div>

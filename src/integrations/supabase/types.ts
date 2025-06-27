@@ -9,6 +9,123 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      listings: {
+        Row: {
+          address_line_2: string | null
+          address_line_3: string | null
+          advert_type: string | null
+          availability: string | null
+          bathrooms: number | null
+          bedrooms: number | null
+          bills_included: boolean | null
+          created_at: string
+          deposit: string | null
+          description: string | null
+          dss_accepted: boolean | null
+          families_allowed: boolean | null
+          fireplace: boolean | null
+          flat_number: string | null
+          furnishing: string | null
+          garden_access: boolean | null
+          id: string
+          is_readvertising: boolean | null
+          max_tenants: number | null
+          min_tenancy: number | null
+          monthly_rent: number | null
+          move_in_date: string | null
+          parking: boolean | null
+          pets_allowed: boolean | null
+          postcode: string | null
+          property_type: string | null
+          remote_viewings: boolean | null
+          smokers_allowed: boolean | null
+          status: string | null
+          students_allowed: boolean | null
+          students_only: boolean | null
+          town: string | null
+          updated_at: string
+          user_id: string
+          weekly_rent: number | null
+          youtube_url: string | null
+        }
+        Insert: {
+          address_line_2?: string | null
+          address_line_3?: string | null
+          advert_type?: string | null
+          availability?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          bills_included?: boolean | null
+          created_at?: string
+          deposit?: string | null
+          description?: string | null
+          dss_accepted?: boolean | null
+          families_allowed?: boolean | null
+          fireplace?: boolean | null
+          flat_number?: string | null
+          furnishing?: string | null
+          garden_access?: boolean | null
+          id?: string
+          is_readvertising?: boolean | null
+          max_tenants?: number | null
+          min_tenancy?: number | null
+          monthly_rent?: number | null
+          move_in_date?: string | null
+          parking?: boolean | null
+          pets_allowed?: boolean | null
+          postcode?: string | null
+          property_type?: string | null
+          remote_viewings?: boolean | null
+          smokers_allowed?: boolean | null
+          status?: string | null
+          students_allowed?: boolean | null
+          students_only?: boolean | null
+          town?: string | null
+          updated_at?: string
+          user_id: string
+          weekly_rent?: number | null
+          youtube_url?: string | null
+        }
+        Update: {
+          address_line_2?: string | null
+          address_line_3?: string | null
+          advert_type?: string | null
+          availability?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          bills_included?: boolean | null
+          created_at?: string
+          deposit?: string | null
+          description?: string | null
+          dss_accepted?: boolean | null
+          families_allowed?: boolean | null
+          fireplace?: boolean | null
+          flat_number?: string | null
+          furnishing?: string | null
+          garden_access?: boolean | null
+          id?: string
+          is_readvertising?: boolean | null
+          max_tenants?: number | null
+          min_tenancy?: number | null
+          monthly_rent?: number | null
+          move_in_date?: string | null
+          parking?: boolean | null
+          pets_allowed?: boolean | null
+          postcode?: string | null
+          property_type?: string | null
+          remote_viewings?: boolean | null
+          smokers_allowed?: boolean | null
+          status?: string | null
+          students_allowed?: boolean | null
+          students_only?: boolean | null
+          town?: string | null
+          updated_at?: string
+          user_id?: string
+          weekly_rent?: number | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
