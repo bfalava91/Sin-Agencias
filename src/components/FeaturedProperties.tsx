@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const properties = [
   {
-    id: 1,
+    id: "1",
     title: "Moderno Apartamento 2 Habitaciones",
     location: "Malasaña, Madrid",
     price: 1850,
@@ -19,7 +19,7 @@ const properties = [
     status: "active"
   },
   {
-    id: 2,
+    id: "2",
     title: "Espacioso Piso Victoriano",
     location: "Chueca, Madrid",
     price: 2400,
@@ -33,7 +33,7 @@ const properties = [
     status: "active"
   },
   {
-    id: 3,
+    id: "3",
     title: "Estudio Contemporáneo",
     location: "La Latina, Madrid",
     price: 1200,
@@ -47,7 +47,7 @@ const properties = [
     status: "active"
   },
   {
-    id: 4,
+    id: "4",
     title: "Ático de Lujo 2 Habitaciones",
     location: "Salamanca, Madrid",
     price: 3200,
@@ -61,7 +61,7 @@ const properties = [
     status: "active"
   },
   {
-    id: 5,
+    id: "5",
     title: "Encantador Piso con Terraza",
     location: "Retiro, Madrid",
     price: 2100,
@@ -75,7 +75,7 @@ const properties = [
     status: "active"
   },
   {
-    id: 6,
+    id: "6",
     title: "Moderno Loft Urbano",
     location: "Chamberí, Madrid",
     price: 1650,
