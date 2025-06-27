@@ -42,6 +42,13 @@ const Navbar = () => {
     });
   };
 
+  const handleAboutUsClick = (action: string) => {
+    toast({
+      title: "Próximamente",
+      description: `La página '${action}' estará disponible pronto.`,
+    });
+  };
+
   const handleSignIn = () => {
     navigate('/auth');
   };
@@ -85,6 +92,49 @@ const Navbar = () => {
                 >
                   {t('nav.listProperty')}
                 </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">
+                      Sobre Nosotros
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56 bg-white shadow-lg border">
+                    <div className="px-2 py-1.5 text-sm font-semibold text-gray-900">
+                      Paquetes para propietarios
+                    </div>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Anuncia tu piso')} className="cursor-pointer">
+                      Anuncia tu piso
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Servicio completo alquiler')} className="cursor-pointer">
+                      Servicio completo alquiler
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Ver todos los precios')} className="cursor-pointer">
+                      Ver todos los precios
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1.5 text-sm font-semibold text-gray-900">
+                      Servicios
+                    </div>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Referencias Inquilinos')} className="cursor-pointer">
+                      Referencias Inquilinos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Gestión de Alquileres')} className="cursor-pointer">
+                      Gestión de Alquileres
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Inventario')} className="cursor-pointer">
+                      Inventario
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Fotos y planos')} className="cursor-pointer">
+                      Fotos y planos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Visitas')} className="cursor-pointer">
+                      Visitas
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAboutUsClick('Apoyo legal')} className="cursor-pointer">
+                      Apoyo legal
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <button 
                   onClick={handleHowItWorks}
                   className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
