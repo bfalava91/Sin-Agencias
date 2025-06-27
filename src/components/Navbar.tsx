@@ -1,13 +1,22 @@
 
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import LanguageToggle from "./LanguageToggle";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const { t } = useLanguage();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -16,6 +25,10 @@ const Navbar = () => {
   };
 
   const handleListProperty = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
     toast({
       title: "Próximamente",
       description: "La funcionalidad para publicar propiedades estará disponible pronto.",
@@ -30,16 +43,14 @@ const Navbar = () => {
   };
 
   const handleSignIn = () => {
-    toast({
-      title: "Próximamente",
-      description: "El sistema de autenticación estará disponible pronto.",
-    });
+    navigate('/auth');
   };
 
-  const handleSignUp = () => {
+  const handleSignOut = async () => {
+    await signOut();
     toast({
-      title: "Próximamente",
-      description: "El registro de usuarios estará disponible pronto.",
+      title: "Sesión cerrada",
+      description: "Has cerrado sesión correctamente.",
     });
   };
 
@@ -86,12 +97,35 @@ const Navbar = () => {
           
           <div className="hidden md:flex items-center space-x-4">
             <LanguageToggle />
-            <Button variant="ghost" size="sm" onClick={handleSignIn}>
-              {t('nav.signIn')}
-            </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleSignUp}>
-              {t('nav.signUp')}
-            </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span>{user.email}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem className="text-sm text-gray-600">
+                    {user.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center space-x-2">
+                    <LogOut className="h-4 w-4" />
+                    <span>Cerrar Sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleSignIn}>
+                  {t('nav.signIn')}
+                </Button>
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleSignIn}>
+                  {t('nav.signUp')}
+                </Button>
+              </>
+            )}
           </div>
           
           <div className="md:hidden flex items-center space-x-2">

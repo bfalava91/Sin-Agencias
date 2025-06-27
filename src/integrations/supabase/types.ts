@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       properties: {
         Row: {
           created_at: string
@@ -18,8 +51,10 @@ export type Database = {
           location: string | null
           price: number | null
           rooms: number | null
+          status: string | null
           title: string | null
-          user_id: string | null
+          updated_at: string
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -29,8 +64,10 @@ export type Database = {
           location?: string | null
           price?: number | null
           rooms?: number | null
+          status?: string | null
           title?: string | null
-          user_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Update: {
           created_at?: string
@@ -40,8 +77,10 @@ export type Database = {
           location?: string | null
           price?: number | null
           rooms?: number | null
+          status?: string | null
           title?: string | null
-          user_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -53,7 +92,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "tenant" | "landlord"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -168,6 +207,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["tenant", "landlord"],
+    },
   },
 } as const
