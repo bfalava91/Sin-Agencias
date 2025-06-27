@@ -19,7 +19,6 @@ export interface ListingFormData {
   furnishing: string;
   description: string;
   monthlyRent: string;
-  weeklyRent: string;
   deposit: string;
   minTenancy: string;
   maxTenants: string;
@@ -30,13 +29,13 @@ export interface ListingFormData {
   fireplace: boolean;
   studentsAllowed: boolean;
   familiesAllowed: boolean;
-  dssAccepted: boolean;
   petsAllowed: boolean;
   smokersAllowed: boolean;
   studentsOnly: boolean;
   availability: string;
   remoteViewings: boolean;
   youtubeUrl: string;
+  features: string;
   agreedToTerms: boolean;
 }
 
@@ -53,6 +52,30 @@ export const useListings = () => {
         variant: "destructive",
       });
       return { success: false, error: "No authenticated user" };
+    }
+
+    // Validation for required fields when publishing
+    if (publish) {
+      const requiredFields = ['postcode', 'town', 'advertType', 'propertyType', 'bedrooms', 'bathrooms', 'furnishing'];
+      const missingFields = requiredFields.filter(field => !formData[field as keyof ListingFormData]);
+      
+      if (missingFields.length > 0) {
+        toast({
+          title: "Campos obligatorios faltantes",
+          description: `Por favor completa los siguientes campos: ${missingFields.join(', ')}`,
+          variant: "destructive",
+        });
+        return { success: false, error: "Missing required fields" };
+      }
+      
+      if (!formData.monthlyRent) {
+        toast({
+          title: "Campo obligatorio faltante",
+          description: "Debes especificar el alquiler mensual",
+          variant: "destructive",
+        });
+        return { success: false, error: "Missing monthly rent" };
+      }
     }
 
     setIsLoading(true);
@@ -74,7 +97,6 @@ export const useListings = () => {
         furnishing: formData.furnishing || null,
         description: formData.description || null,
         monthly_rent: formData.monthlyRent ? parseFloat(formData.monthlyRent) : null,
-        weekly_rent: formData.weeklyRent ? parseFloat(formData.weeklyRent) : null,
         deposit: formData.deposit || null,
         min_tenancy: formData.minTenancy ? parseInt(formData.minTenancy) : null,
         max_tenants: formData.maxTenants ? parseInt(formData.maxTenants) : null,
@@ -85,13 +107,13 @@ export const useListings = () => {
         fireplace: formData.fireplace,
         students_allowed: formData.studentsAllowed,
         families_allowed: formData.familiesAllowed,
-        dss_accepted: formData.dssAccepted,
         pets_allowed: formData.petsAllowed,
         smokers_allowed: formData.smokersAllowed,
         students_only: formData.studentsOnly,
         availability: formData.availability || null,
         remote_viewings: formData.remoteViewings,
         youtube_url: formData.youtubeUrl || null,
+        features: formData.features || null,
         status: publish ? 'active' : 'draft'
       };
 
@@ -150,9 +172,29 @@ export const useListings = () => {
     }
   };
 
+  const checkUserHasListings = async () => {
+    if (!user) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (error) throw error;
+
+      return data && data.length > 0;
+    } catch (error: any) {
+      console.error('Error checking user listings:', error);
+      return false;
+    }
+  };
+
   return {
     createListing,
     fetchUserListings,
+    checkUserHasListings,
     isLoading
   };
 };

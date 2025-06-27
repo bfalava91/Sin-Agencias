@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Menu, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -28,10 +29,7 @@ const Navbar = () => {
       navigate('/auth');
       return;
     }
-    toast({
-      title: "Próximamente",
-      description: "La funcionalidad para publicar propiedades estará disponible pronto.",
-    });
+    navigate('/profile');
   };
 
   const handleHowItWorks = () => {
@@ -98,7 +96,7 @@ const Navbar = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">
-                      Sobre Nosotros
+                      Precios y servicios
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56 bg-white shadow-lg border">

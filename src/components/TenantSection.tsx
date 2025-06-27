@@ -21,75 +21,55 @@ const TenantSection = () => {
   };
 
   return (
-    <section className="py-16 bg-gradient-to-r from-green-50 to-emerald-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Card className="overflow-hidden shadow-xl border-0">
-          <CardContent className="p-12">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="hidden lg:block">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl transform -rotate-3"></div>
-                  <div className="relative bg-white rounded-2xl p-8 shadow-lg">
-                    <div className="text-center">
-                      <Search className="h-16 w-16 text-green-600 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Tu próxima casa</h3>
-                      <p className="text-gray-600">Sin intermediarios, sin comisiones</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center mb-6">
-                  <Search className="h-8 w-8 text-green-600 mr-3" />
-                  <h2 className="text-3xl font-bold text-gray-900">
-                    Para inquilinos – Encuentra tu próxima casa
-                  </h2>
-                </div>
-                <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                  En Sin Agencias siempre estás en contacto directo con los propietarios. Sin comisiones, sin estafas… ¡Sin agencias! 
-                  Retiramos los anuncios en el momento en que se alquilan los pisos, así aquí no vas a ver anuncios fantasma. 
-                  Además, protegemos tu depósito y tu alquiler.
-                </p>
-                
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                    <span className="text-gray-700 font-medium">Sin comisiones administrativas</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                    <span className="text-gray-700 font-medium">Sin anuncios muertos</span>
-                  </div>
-                  <div className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                    <span className="text-gray-700 font-medium">Depósito y alquiler protegido</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    size="lg" 
-                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-semibold"
-                    onClick={handleSearchProperties}
-                  >
-                    Buscar propiedades
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="border-green-600 text-green-600 hover:bg-green-50 px-8 py-3 text-lg font-semibold"
-                    onClick={handleLearnMore}
-                  >
-                    Cuéntame más
-                  </Button>
-                </div>
-              </div>
+    <Card className="overflow-hidden shadow-xl border-0 h-full">
+      <CardContent className="p-8">
+        <div className="flex flex-col h-full">
+          <div className="flex items-center mb-6">
+            <Search className="h-8 w-8 text-green-600 mr-3" />
+            <h2 className="text-2xl font-bold text-gray-900">
+              Para inquilinos
+            </h2>
+          </div>
+          <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+            En Sin Agencias siempre estás en contacto directo con los propietarios. Sin comisiones, sin estafas… ¡Sin agencias! 
+            Retiramos los anuncios en el momento en que se alquilan los pisos.
+          </p>
+          
+          <div className="space-y-4 mb-8 flex-1">
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+              <span className="text-gray-700 font-medium">Sin comisiones administrativas</span>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </section>
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+              <span className="text-gray-700 font-medium">Sin anuncios muertos</span>
+            </div>
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+              <span className="text-gray-700 font-medium">Depósito y alquiler protegido</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              size="lg" 
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 text-lg font-semibold"
+              onClick={handleSearchProperties}
+            >
+              Buscar propiedades
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="border-green-600 text-green-600 hover:bg-green-50 px-6 py-3 text-lg font-semibold"
+              onClick={handleLearnMore}
+            >
+              Cuéntame más
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

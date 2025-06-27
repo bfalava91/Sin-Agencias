@@ -13,9 +13,18 @@ const Index = () => {
       <Navbar />
       <Hero />
       <SearchFilters />
-      <LandlordSection />
+      
+      {/* Side by side sections */}
+      <div className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-8">
+            <LandlordSection />
+            <TenantSection />
+          </div>
+        </div>
+      </div>
+      
       <FeaturedProperties />
-      <TenantSection />
       <Footer />
     </div>
   );

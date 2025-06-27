@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,9 @@ interface CreateListingProps {
 
 const CreateListing = ({ onBack }: CreateListingProps) => {
   const { user } = useAuth();
-  const { createListing, isLoading } = useListings();
+  const { createListing, checkUserHasListings, isLoading } = useListings();
+  const [hasExistingListings, setHasExistingListings] = useState(false);
+  const [showReadvertisingQuestion, setShowReadvertisingQuestion] = useState(false);
   const [formData, setFormData] = useState<ListingFormData>({
     isReadvertising: false,
     postcode: "",
@@ -32,7 +35,6 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     furnishing: "",
     description: "",
     monthlyRent: "",
-    weeklyRent: "",
     deposit: "",
     minTenancy: "",
     maxTenants: "",
@@ -43,33 +45,30 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     fireplace: false,
     studentsAllowed: false,
     familiesAllowed: false,
-    dssAccepted: false,
     petsAllowed: false,
     smokersAllowed: false,
     studentsOnly: false,
     availability: "",
     remoteViewings: false,
     youtubeUrl: "",
+    features: "",
     agreedToTerms: false
   });
 
+  useEffect(() => {
+    const checkExistingListings = async () => {
+      if (user) {
+        const hasListings = await checkUserHasListings();
+        setHasExistingListings(hasListings);
+        setShowReadvertisingQuestion(hasListings);
+      }
+    };
+    
+    checkExistingListings();
+  }, [user, checkUserHasListings]);
+
   const handleInputChange = (field: keyof ListingFormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const validateForm = () => {
-    const requiredFields = ['postcode', 'town', 'advertType', 'propertyType', 'bedrooms', 'bathrooms', 'furnishing'];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof ListingFormData]);
-    
-    if (missingFields.length > 0) {
-      return `Por favor completa los siguientes campos obligatorios: ${missingFields.join(', ')}`;
-    }
-    
-    if (!formData.monthlyRent && !formData.weeklyRent) {
-      return "Debes especificar al menos el alquiler mensual o semanal";
-    }
-    
-    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent, publish = false) => {
@@ -81,12 +80,6 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
 
     if (publish && !formData.agreedToTerms) {
       console.log('Must agree to terms to publish');
-      return;
-    }
-
-    const validationError = validateForm();
-    if (validationError) {
-      console.log('Validation error:', validationError);
       return;
     }
 
@@ -138,37 +131,39 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
       </div>
 
       <form className="space-y-8">
-        {/* Re-advertising Question */}
-        <Card>
-          <CardHeader>
-            <CardTitle>¿Vuelves a anunciar con nosotros?</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">
-              Podemos ver que has anunciado con nosotros antes. Si buscas volver a anunciar, 
-              podemos usar los detalles de cualquiera de tus anuncios antiguos para ahorrarte 
-              tiempo.
-            </p>
-            <div className="flex space-x-4">
-              <Button 
-                type="button" 
-                variant={formData.isReadvertising ? "default" : "outline"}
-                onClick={() => handleInputChange("isReadvertising", true)}
-                disabled={isLoading}
-              >
-                Sí - Busco volver a anunciar
-              </Button>
-              <Button 
-                type="button" 
-                variant={!formData.isReadvertising ? "default" : "outline"}
-                onClick={() => handleInputChange("isReadvertising", false)}
-                disabled={isLoading}
-              >
-                No - Este es un nuevo anuncio
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Re-advertising Question - Only show if user has existing listings */}
+        {showReadvertisingQuestion && (
+          <Card>
+            <CardHeader>
+              <CardTitle>¿Vuelves a anunciar con nosotros?</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Podemos ver que has anunciado con nosotros antes. Si buscas volver a anunciar, 
+                podemos usar los detalles de cualquiera de tus anuncios antiguos para ahorrarte 
+                tiempo.
+              </p>
+              <div className="flex space-x-4">
+                <Button 
+                  type="button" 
+                  variant={formData.isReadvertising ? "default" : "outline"}
+                  onClick={() => handleInputChange("isReadvertising", true)}
+                  disabled={isLoading}
+                >
+                  Sí - Busco volver a anunciar
+                </Button>
+                <Button 
+                  type="button" 
+                  variant={!formData.isReadvertising ? "default" : "outline"}
+                  onClick={() => handleInputChange("isReadvertising", false)}
+                  disabled={isLoading}
+                >
+                  No - Este es un nuevo anuncio
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Property Details */}
         <Card>
@@ -179,19 +174,14 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="postcode">Código Postal *</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="postcode"
-                    value={formData.postcode}
-                    onChange={(e) => handleInputChange("postcode", e.target.value)}
-                    placeholder="Ej: 28001"
-                    required
-                    disabled={isLoading}
-                  />
-                  <Button type="button" variant="outline" disabled={isLoading}>
-                    Buscar Dirección
-                  </Button>
-                </div>
+                <Input
+                  id="postcode"
+                  value={formData.postcode}
+                  onChange={(e) => handleInputChange("postcode", e.target.value)}
+                  placeholder="Ej: 28001"
+                  required
+                  disabled={isLoading}
+                />
               </div>
               
               <div>
@@ -366,9 +356,6 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 <Button type="button" variant="outline" size="sm" disabled={isLoading}>
                   Escribir Descripción Ahora
                 </Button>
-                <Button type="button" variant="outline" size="sm" disabled={isLoading}>
-                  Generar Descripción Inteligente
-                </Button>
               </div>
             </div>
           </CardContent>
@@ -382,7 +369,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="monthlyRent">Alquiler Mensual (€)</Label>
+                <Label htmlFor="monthlyRent">Alquiler Mensual (€) *</Label>
                 <Input
                   id="monthlyRent"
                   type="number"
@@ -393,20 +380,6 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 />
               </div>
               
-              <div>
-                <Label htmlFor="weeklyRent">Alquiler Semanal (€)</Label>
-                <Input
-                  id="weeklyRent"
-                  type="number"
-                  value={formData.weeklyRent}
-                  onChange={(e) => handleInputChange("weeklyRent", e.target.value)}
-                  placeholder="300"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Cantidad de Fianza</Label>
                 <Select 
@@ -426,7 +399,9 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   </SelectContent>
                 </Select>
               </div>
-              
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="minTenancy">Duración Mínima de Alquiler (meses)</Label>
                 <Input
@@ -438,9 +413,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   disabled={isLoading}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
               <div>
                 <Label htmlFor="maxTenants">Número Máximo de Inquilinos</Label>
                 <Input
@@ -452,17 +425,17 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                   disabled={isLoading}
                 />
               </div>
-              
-              <div>
-                <Label htmlFor="moveInDate">Fecha de Entrada Más Temprana</Label>
-                <Input
-                  id="moveInDate"
-                  type="date"
-                  value={formData.moveInDate}
-                  onChange={(e) => handleInputChange("moveInDate", e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="moveInDate">Fecha de Entrada Más Temprana</Label>
+              <Input
+                id="moveInDate"
+                type="date"
+                value={formData.moveInDate}
+                onChange={(e) => handleInputChange("moveInDate", e.target.value)}
+                disabled={isLoading}
+              />
             </div>
           </CardContent>
         </Card>
@@ -472,7 +445,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
           <CardHeader>
             <CardTitle>Características</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { id: "billsIncluded", label: "Gastos Incluidos" },
@@ -491,6 +464,18 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 </div>
               ))}
             </div>
+            
+            <div>
+              <Label htmlFor="features">Características Adicionales</Label>
+              <Textarea
+                id="features"
+                value={formData.features}
+                onChange={(e) => handleInputChange("features", e.target.value)}
+                rows={3}
+                placeholder="Describe características adicionales de la propiedad..."
+                disabled={isLoading}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -504,7 +489,6 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
               {[
                 { id: "studentsAllowed", label: "Estudiantes Permitidos" },
                 { id: "familiesAllowed", label: "Familias Permitidas" },
-                { id: "dssAccepted", label: "Ingresos DSS Aceptados" },
                 { id: "petsAllowed", label: "Mascotas Permitidas" },
                 { id: "smokersAllowed", label: "Fumadores Permitidos" },
                 { id: "studentsOnly", label: "Solo Estudiantes" },
