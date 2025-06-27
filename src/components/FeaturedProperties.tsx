@@ -15,7 +15,8 @@ const properties = [
     image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
     featured: true,
     available: "Disponible Ahora",
-    type: "flat"
+    type: "flat",
+    status: "active"
   },
   {
     id: 2,
@@ -28,7 +29,8 @@ const properties = [
     image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop",
     featured: true,
     available: "Disponible 15 Ene",
-    type: "flat"
+    type: "flat",
+    status: "active"
   },
   {
     id: 3,
@@ -41,7 +43,8 @@ const properties = [
     image: "https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=400&h=300&fit=crop",
     featured: false,
     available: "Disponible Ahora",
-    type: "studio"
+    type: "studio",
+    status: "active"
   },
   {
     id: 4,
@@ -54,7 +57,8 @@ const properties = [
     image: "https://images.unsplash.com/photo-1524230572899-a752b3835840?w=400&h=300&fit=crop",
     featured: true,
     available: "Disponible 1 Feb",
-    type: "flat"
+    type: "flat",
+    status: "active"
   },
   {
     id: 5,
@@ -67,7 +71,8 @@ const properties = [
     image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
     featured: false,
     available: "Disponible Ahora",
-    type: "flat"
+    type: "flat",
+    status: "active"
   },
   {
     id: 6,
@@ -80,7 +85,8 @@ const properties = [
     image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop",
     featured: false,
     available: "Disponible 10 Feb",
-    type: "studio"
+    type: "studio",
+    status: "active"
   }
 ];
 

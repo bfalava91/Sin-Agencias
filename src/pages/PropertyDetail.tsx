@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Listing {
   id: string;
-  title: string;
+  title?: string; // Made optional since it can be generated
   description: string;
   postcode: string;
   town: string;
@@ -150,7 +149,7 @@ const PropertyDetail = () => {
 
   const handleShare = (platform: string) => {
     const url = window.location.href;
-    const title = listing?.title || 'Propiedad';
+    const title = listing?.title || getTitle();
     const text = `Echa un vistazo a esta propiedad: ${title}`;
 
     switch (platform) {
@@ -188,6 +187,11 @@ const PropertyDetail = () => {
     if (!listing) return '';
     const parts = [listing.neighborhood, listing.town].filter(Boolean);
     return parts.join(', ');
+  };
+
+  const getTitle = () => {
+    if (!listing) return '';
+    return listing.title || `${listing.property_type || 'Propiedad'} en ${listing.town || 'ubicación'}`;
   };
 
   const getAvailabilityText = () => {
@@ -259,7 +263,7 @@ const PropertyDetail = () => {
             <div className="relative mb-4">
               <img 
                 src={placeholderImages[currentImageIndex]}
-                alt={listing.title || 'Propiedad'}
+                alt={getTitle()}
                 className="w-full h-96 object-cover rounded-lg"
               />
               
@@ -533,7 +537,7 @@ const PropertyDetail = () => {
             <Card className="sticky top-8">
               <CardContent className="p-6">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                  {listing.title || `${listing.property_type} en ${listing.town}`}
+                  {getTitle()}
                 </h1>
                 <div className="flex items-center text-gray-600 mb-4">
                   <MapPin className="h-4 w-4 mr-1" />
