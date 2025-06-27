@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Bed, Bath, Square, MapPin, Heart } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Property {
   id: number;
@@ -24,6 +25,7 @@ interface PropertyCardProps {
 
 const PropertyCard = ({ property }: PropertyCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden border-0 shadow-md">
@@ -36,7 +38,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         <div className="absolute top-3 left-3">
           {property.featured && (
             <Badge className="bg-green-500 hover:bg-green-600">
-              Featured
+              {t('featured.featured')}
             </Badge>
           )}
         </div>
@@ -68,32 +70,32 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         
         <div className="flex items-center justify-between mb-4">
           <div className="text-2xl font-bold text-gray-900">
-            £{property.price.toLocaleString()}
-            <span className="text-sm font-normal text-gray-600">/month</span>
+            €{property.price.toLocaleString()}
+            <span className="text-sm font-normal text-gray-600">{t('featured.month')}</span>
           </div>
         </div>
         
         <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
           <div className="flex items-center">
             <Bed className="h-4 w-4 mr-1" />
-            {property.bedrooms} bed{property.bedrooms > 1 ? 's' : ''}
+            {property.bedrooms} {property.bedrooms > 1 ? t('featured.beds') : t('featured.bed')}
           </div>
           <div className="flex items-center">
             <Bath className="h-4 w-4 mr-1" />
-            {property.bathrooms} bath{property.bathrooms > 1 ? 's' : ''}
+            {property.bathrooms} {property.bathrooms > 1 ? t('featured.baths') : t('featured.bath')}
           </div>
           <div className="flex items-center">
             <Square className="h-4 w-4 mr-1" />
-            {property.area} sqft
+            {property.area} {t('featured.sqft')}
           </div>
         </div>
         
         <div className="flex space-x-2">
           <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-            View Details
+            {t('featured.viewDetails')}
           </Button>
           <Button variant="outline" className="flex-1">
-            Contact
+            {t('featured.contact')}
           </Button>
         </div>
       </CardContent>

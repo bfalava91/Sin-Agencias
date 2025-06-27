@@ -4,10 +4,12 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Filter, X } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const SearchFilters = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [priceRange, setPriceRange] = useState([500, 2000]);
+  const { t } = useLanguage();
 
   return (
     <section className="bg-white border-b border-gray-200 py-6">
@@ -15,11 +17,11 @@ const SearchFilters = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              1,247 properties found
+              1,247 {t('filters.propertiesFound')}
             </h2>
             <div className="flex space-x-2">
-              <Badge variant="secondary">London <X className="ml-1 h-3 w-3" /></Badge>
-              <Badge variant="secondary">2+ bedrooms <X className="ml-1 h-3 w-3" /></Badge>
+              <Badge variant="secondary">Malasaña <X className="ml-1 h-3 w-3" /></Badge>
+              <Badge variant="secondary">2+ {t('filters.bedrooms')} <X className="ml-1 h-3 w-3" /></Badge>
             </div>
           </div>
           
@@ -29,7 +31,7 @@ const SearchFilters = () => {
             className="flex items-center"
           >
             <Filter className="mr-2 h-4 w-4" />
-            Filters
+            {t('filters.filters')}
           </Button>
         </div>
         
@@ -37,7 +39,7 @@ const SearchFilters = () => {
           <div className="bg-gray-50 rounded-lg p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price Range (£/month)
+                {t('filters.priceRange')}
               </label>
               <Slider
                 value={priceRange}
@@ -48,14 +50,14 @@ const SearchFilters = () => {
                 className="mb-2"
               />
               <div className="flex justify-between text-sm text-gray-500">
-                <span>£{priceRange[0]}</span>
-                <span>£{priceRange[1]}</span>
+                <span>€{priceRange[0]}</span>
+                <span>€{priceRange[1]}</span>
               </div>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bedrooms
+                {t('filters.bedroomsLabel')}
               </label>
               <div className="flex space-x-2">
                 {[1, 2, 3, 4, '5+'].map((bed) => (
@@ -68,19 +70,19 @@ const SearchFilters = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Property Type
+                {t('filters.propertyTypeLabel')}
               </label>
               <select className="w-full px-3 py-2 border border-gray-300 rounded-md">
-                <option>Any</option>
-                <option>House</option>
-                <option>Flat</option>
-                <option>Studio</option>
+                <option>{t('filters.any')}</option>
+                <option>{t('hero.house')}</option>
+                <option>{t('hero.flat')}</option>
+                <option>{t('hero.studio')}</option>
               </select>
             </div>
             
             <div className="flex items-end">
               <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                Apply Filters
+                {t('filters.applyFilters')}
               </Button>
             </div>
           </div>
