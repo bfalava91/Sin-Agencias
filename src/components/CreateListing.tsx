@@ -48,7 +48,8 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     studentsOnly: false,
     availability: "",
     remoteViewings: false,
-    youtubeUrl: ""
+    youtubeUrl: "",
+    agreedToTerms: false
   });
 
   const handleInputChange = (field: keyof ListingFormData, value: string | boolean) => {
@@ -70,10 +71,15 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
     return null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, publish = false) => {
     e.preventDefault();
     
     if (!user) {
+      return;
+    }
+
+    if (publish && !formData.agreedToTerms) {
+      console.log('Must agree to terms to publish');
       return;
     }
 
@@ -85,7 +91,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
 
     console.log('Submitting form with data:', formData);
     
-    const result = await createListing(formData);
+    const result = await createListing(formData, publish);
     
     if (result.success) {
       onBack();
@@ -130,7 +136,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form className="space-y-8">
         {/* Re-advertising Question */}
         <Card>
           <CardHeader>
@@ -540,10 +546,10 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
               <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <p className="text-gray-600 mb-4">
-                Arrastra una foto aquí, o haz clic en "Añadir Fotos" para seleccionar tus fotos
+                La funcionalidad de subida de imágenes estará disponible próximamente
               </p>
-              <Button type="button" variant="outline" disabled={isLoading}>
-                Añadir Fotos
+              <Button type="button" variant="outline" disabled>
+                Añadir Fotos (Próximamente)
               </Button>
             </div>
             
@@ -571,6 +577,7 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 id="terms"
                 checked={formData.agreedToTerms}
                 onCheckedChange={(checked) => handleInputChange("agreedToTerms", checked)}
+                disabled={isLoading}
               />
               <Label htmlFor="terms" className="text-sm">
                 Confirmo que no cobro tasas administrativas a los inquilinos, que no soy una agencia, 
@@ -584,7 +591,9 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
         {/* Action Buttons */}
         <div className="flex space-x-4">
           <Button 
-            type="submit" 
+            type="button"
+            onClick={(e) => handleSubmit(e, false)}
+            variant="outline"
             className="flex-1"
             disabled={isLoading}
           >
@@ -594,51 +603,23 @@ const CreateListing = ({ onBack }: CreateListingProps) => {
                 Guardando...
               </>
             ) : (
-              'Guardar Anuncio'
+              'Guardar como Borrador'
             )}
           </Button>
           <Button 
-            type="button" 
-            variant="outline" 
+            type="button"
+            onClick={(e) => handleSubmit(e, true)}
             className="flex-1"
-            onClick={() => {
-              setFormData({
-                isReadvertising: false,
-                postcode: "",
-                flatNumber: "",
-                addressLine2: "",
-                addressLine3: "",
-                town: "",
-                advertType: "",
-                propertyType: "",
-                bedrooms: "",
-                bathrooms: "",
-                furnishing: "",
-                description: "",
-                monthlyRent: "",
-                weeklyRent: "",
-                deposit: "",
-                minTenancy: "",
-                maxTenants: "",
-                moveInDate: "",
-                billsIncluded: false,
-                gardenAccess: false,
-                parking: false,
-                fireplace: false,
-                studentsAllowed: false,
-                familiesAllowed: false,
-                dssAccepted: false,
-                petsAllowed: false,
-                smokersAllowed: false,
-                studentsOnly: false,
-                availability: "",
-                remoteViewings: false,
-                youtubeUrl: ""
-              });
-            }}
-            disabled={isLoading}
+            disabled={isLoading || !formData.agreedToTerms}
           >
-            Restablecer
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Publicando...
+              </>
+            ) : (
+              'Publicar Anuncio'
+            )}
           </Button>
         </div>
       </form>

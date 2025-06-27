@@ -5,9 +5,10 @@ import { Plus, Building2 } from "lucide-react";
 
 interface ProfileDashboardProps {
   onCreateListing: () => void;
+  onManageListings: () => void;
 }
 
-const ProfileDashboard = ({ onCreateListing }: ProfileDashboardProps) => {
+const ProfileDashboard = ({ onCreateListing, onManageListings }: ProfileDashboardProps) => {
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -33,7 +34,7 @@ const ProfileDashboard = ({ onCreateListing }: ProfileDashboardProps) => {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onManageListings}>
           <CardHeader className="text-center">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <Building2 className="h-8 w-8 text-green-600" />

@@ -21,6 +21,7 @@ import Footer from "@/components/Footer";
 import ProfileSidebar from "@/components/ProfileSidebar";
 import ProfileDashboard from "@/components/ProfileDashboard";
 import CreateListing from "@/components/CreateListing";
+import ManageListings from "@/components/ManageListings";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -55,7 +56,16 @@ const Profile = () => {
       if (activeSection === "create-listing") {
         return <CreateListing onBack={() => setActiveSection("dashboard")} />;
       }
-      return <ProfileDashboard onCreateListing={() => setActiveSection("create-listing")} />;
+      if (activeSection === "manage-listings") {
+        return <ManageListings 
+          onBack={() => setActiveSection("dashboard")} 
+          onCreateNew={() => setActiveSection("create-listing")}
+        />;
+      }
+      return <ProfileDashboard 
+        onCreateListing={() => setActiveSection("create-listing")}
+        onManageListings={() => setActiveSection("manage-listings")}
+      />;
     }
     
     return (

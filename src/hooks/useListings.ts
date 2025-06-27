@@ -36,6 +36,7 @@ export interface ListingFormData {
   availability: string;
   remoteViewings: boolean;
   youtubeUrl: string;
+  agreedToTerms: boolean;
 }
 
 export const useListings = () => {
@@ -43,7 +44,7 @@ export const useListings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const createListing = async (formData: ListingFormData) => {
+  const createListing = async (formData: ListingFormData, publish = false) => {
     if (!user) {
       toast({
         title: "Error de autenticación",
@@ -89,7 +90,7 @@ export const useListings = () => {
         availability: formData.availability || null,
         remote_viewings: formData.remoteViewings,
         youtube_url: formData.youtubeUrl || null,
-        status: 'draft'
+        status: publish ? 'active' : 'draft'
       };
 
       console.log('Creating listing with data:', listingData);
@@ -108,8 +109,8 @@ export const useListings = () => {
       console.log('Listing created successfully:', data);
 
       toast({
-        title: "¡Anuncio creado exitosamente!",
-        description: "Tu anuncio ha sido guardado como borrador.",
+        title: publish ? "¡Anuncio publicado exitosamente!" : "¡Anuncio guardado como borrador!",
+        description: publish ? "Tu anuncio está ahora activo y visible para inquilinos." : "Tu anuncio ha sido guardado como borrador.",
       });
 
       return { success: true, data };
@@ -128,8 +129,28 @@ export const useListings = () => {
     }
   };
 
+  const fetchUserListings = async () => {
+    if (!user) return { success: false, error: "No authenticated user" };
+
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('Error fetching listings:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   return {
     createListing,
+    fetchUserListings,
     isLoading
   };
 };
