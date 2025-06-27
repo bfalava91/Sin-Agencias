@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   ArrowRight,
@@ -34,7 +35,11 @@ import {
   Zap,
   MapIcon,
   Mail,
-  MessageSquare
+  MessageSquare,
+  Home,
+  UserCheck,
+  Building,
+  CreditCard
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -54,6 +59,7 @@ const propertyDetails = {
     bedrooms: 2,
     bathrooms: 1,
     area: 70,
+    maxTenants: 4,
     images: [
       "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop",
       "https://images.unsplash.com/photo-1486304873000-235643847519?w=800&h=600&fit=crop",
@@ -64,6 +70,7 @@ const propertyDetails = {
     featured: true,
     available: "Disponible Ahora",
     availableFrom: "2024-07-01",
+    minimumTenancy: 6,
     type: "flat",
     description: "Hermoso apartamento moderno en el corazón de Malasaña. Completamente renovado con acabados de alta calidad. Ubicación perfecta cerca de tiendas, restaurantes y transporte público.",
     features: [
@@ -78,14 +85,15 @@ const propertyDetails = {
       students: true,
       families: false,
       pets: true,
-      smokers: false
+      smokers: false,
+      dssLha: false
     },
     availability: {
       shortTerm: false,
       virtualTour: true
     },
     amenities: {
-      garden: false,
+      garden: true,
       parking: true,
       fireplace: false,
       furnished: true,
@@ -275,174 +283,167 @@ const PropertyDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Información detallada */}
+            {/* Features Section */}
             <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Features</CardTitle>
+              </CardHeader>
               <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {/* Precio y facturas */}
-                  <div>
-                    <h4 className="font-semibold mb-3 flex items-center">
-                      <Euro className="h-4 w-4 mr-2" />
-                      Precio y facturas
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Depósito:</span>
-                        <span>€{property.deposit}</span>
+                <Tabs defaultValue="price" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="price" className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Price & Bills
+                    </TabsTrigger>
+                    <TabsTrigger value="tenant" className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4" />
+                      Tenant Preference
+                    </TabsTrigger>
+                    <TabsTrigger value="availability" className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      Availability
+                    </TabsTrigger>
+                    <TabsTrigger value="features" className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Features
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="price" className="mt-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Deposit</span>
+                        <span className="font-semibold">€{property.deposit.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Alquiler mensual:</span>
-                        <span>€{property.price}</span>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Rent PCM</span>
+                        <span className="font-semibold">€{property.price.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span>Facturas incluidas:</span>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Bills Included</span>
                         {property.billsIncluded ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span>Internet:</span>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-600">Broadband</span>
                         {property.internet ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <span className="text-blue-600 text-sm">View Offers</span>
                         }
                       </div>
                     </div>
-                  </div>
-
-                  {/* Inquilino preferido */}
-                  <div>
-                    <h4 className="font-semibold mb-3 flex items-center">
-                      <Users className="h-4 w-4 mr-2" />
-                      Inquilino preferido
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <GraduationCap className="h-3 w-3 mr-1" />
-                          Estudiante:
-                        </span>
+                  </TabsContent>
+                  
+                  <TabsContent value="tenant" className="mt-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Student Friendly</span>
                         {property.preferences.students ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span>Familias:</span>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Families Allowed</span>
                         {property.preferences.families ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <PawPrint className="h-3 w-3 mr-1" />
-                          Mascotas:
-                        </span>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Pets Allowed</span>
                         {property.preferences.pets ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <Cigarette className="h-3 w-3 mr-1" />
-                          Fumadores:
-                        </span>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Smokers Allowed</span>
                         {property.preferences.smokers ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">DSS/LHA Covers Rent</span>
+                        {property.preferences.dssLha ? 
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
+                        }
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-600">Máximos inquilinos</span>
+                        <span className="font-semibold">{property.maxTenants}</span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Disponibilidad */}
-                  <div>
-                    <h4 className="font-semibold mb-3 flex items-center">
-                      <CalendarIcon className="h-4 w-4 mr-2" />
-                      Disponibilidad
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="block text-gray-600">Disponible desde:</span>
-                        <span>{new Date(property.availableFrom).toLocaleDateString('es-ES')}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Contrato corto:</span>
-                        {property.availability.shortTerm ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
-                        }
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <Eye className="h-3 w-3 mr-1" />
-                          Visita online:
+                  </TabsContent>
+                  
+                  <TabsContent value="availability" className="mt-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Available From</span>
+                        <span className="font-semibold">
+                          {new Date(property.availableFrom).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
                         </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Minimum Tenancy</span>
+                        <span className="font-semibold">{property.minimumTenancy} Months</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-600">Online Viewings</span>
                         {property.availability.virtualTour ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
                     </div>
-                  </div>
-
-                  {/* ¿Qué más? */}
-                  <div>
-                    <h4 className="font-semibold mb-3">¿Qué más?</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <TreePine className="h-3 w-3 mr-1" />
-                          Jardín:
-                        </span>
+                  </TabsContent>
+                  
+                  <TabsContent value="features" className="mt-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Garden</span>
                         {property.amenities.garden ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <Car className="h-3 w-3 mr-1" />
-                          Parking:
-                        </span>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Parking</span>
                         {property.amenities.parking ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <Flame className="h-3 w-3 mr-1" />
-                          Chimenea:
-                        </span>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Fireplace</span>
                         {property.amenities.fireplace ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
+                          <CheckCircle className="h-5 w-5 text-green-500" /> : 
+                          <XCircle className="h-5 w-5 text-red-500" />
                         }
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <Sofa className="h-3 w-3 mr-1" />
-                          Amueblado:
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-gray-600">Furnishing</span>
+                        <span className="text-sm text-gray-600">
+                          {property.amenities.furnished ? 'Furnished' : 'At tenant choice'}
                         </span>
-                        {property.amenities.furnished ? 
-                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
-                          <XCircle className="h-4 w-4 text-red-500" />
-                        }
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center">
-                          <Zap className="h-3 w-3 mr-1" />
-                          Eficiencia energética:
-                        </span>
-                        <Badge variant="secondary">{property.amenities.energyRating}</Badge>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-gray-600">EPC Rating</span>
+                        <Badge variant="secondary" className="font-semibold">
+                          {property.amenities.energyRating}
+                        </Badge>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
