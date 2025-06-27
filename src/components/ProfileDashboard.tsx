@@ -1,7 +1,9 @@
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Building2 } from "lucide-react";
+import { useListings } from "@/hooks/useListings";
 
 interface ProfileDashboardProps {
   onCreateListing: () => void;
@@ -9,6 +11,30 @@ interface ProfileDashboardProps {
 }
 
 const ProfileDashboard = ({ onCreateListing, onManageListings }: ProfileDashboardProps) => {
+  const { fetchUserListings } = useListings();
+  const [stats, setStats] = useState({
+    activeListings: 0,
+    totalViews: 0,
+    contacts: 0,
+    favorites: 0
+  });
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    const result = await fetchUserListings();
+    
+    if (result.success && result.data) {
+      const activeListings = result.data.filter(listing => listing.status === 'active').length;
+      setStats(prev => ({
+        ...prev,
+        activeListings
+      }));
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -57,25 +83,25 @@ const ProfileDashboard = ({ onCreateListing, onManageListings }: ProfileDashboar
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">0</div>
+              <div className="text-2xl font-bold text-blue-600">{stats.activeListings}</div>
               <div className="text-sm text-gray-600">Anuncios Activos</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">0</div>
+              <div className="text-2xl font-bold text-green-600">{stats.totalViews}</div>
               <div className="text-sm text-gray-600">Vistas Totales</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-orange-600">0</div>
+              <div className="text-2xl font-bold text-orange-600">{stats.contacts}</div>
               <div className="text-sm text-gray-600">Contactos</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">0</div>
+              <div className="text-2xl font-bold text-purple-600">{stats.favorites}</div>
               <div className="text-sm text-gray-600">Favoritos</div>
             </CardContent>
           </Card>

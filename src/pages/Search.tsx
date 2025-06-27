@@ -6,118 +6,13 @@ import Footer from "@/components/Footer";
 import SearchFilters from "@/components/SearchFilters";
 import PropertyCard from "@/components/PropertyCard";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-// Mock data - en una aplicación real vendría de una API
-const allProperties = [
-  {
-    id: 1,
-    title: "Moderno Apartamento 2 Habitaciones",
-    location: "Malasaña, Madrid",
-    price: 1850,
-    bedrooms: 2,
-    bathrooms: 1,
-    area: 70,
-    image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
-    featured: true,
-    available: "Disponible Ahora",
-    type: "flat"
-  },
-  {
-    id: 2,
-    title: "Espacioso Piso Victoriano",
-    location: "Chueca, Madrid",
-    price: 2400,
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 95,
-    image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop",
-    featured: true,
-    available: "Disponible 15 Ene",
-    type: "flat"
-  },
-  {
-    id: 3,
-    title: "Estudio Contemporáneo",
-    location: "La Latina, Madrid",
-    price: 1200,
-    bedrooms: 1,
-    bathrooms: 1,
-    area: 42,
-    image: "https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=400&h=300&fit=crop",
-    featured: false,
-    available: "Disponible Ahora",
-    type: "studio"
-  },
-  {
-    id: 4,
-    title: "Ático de Lujo 2 Habitaciones",
-    location: "Salamanca, Madrid",
-    price: 3200,
-    bedrooms: 2,
-    bathrooms: 2,
-    area: 88,
-    image: "https://images.unsplash.com/photo-1524230572899-a752b3835840?w=400&h=300&fit=crop",
-    featured: true,
-    available: "Disponible 1 Feb",
-    type: "flat"
-  },
-  {
-    id: 5,
-    title: "Encantador Piso con Terraza",
-    location: "Retiro, Madrid",
-    price: 2100,
-    bedrooms: 2,
-    bathrooms: 1,
-    area: 74,
-    image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
-    featured: false,
-    available: "Disponible Ahora",
-    type: "flat"
-  },
-  {
-    id: 6,
-    title: "Moderno Loft Urbano",
-    location: "Chamberí, Madrid",
-    price: 1650,
-    bedrooms: 1,
-    bathrooms: 1,
-    area: 56,
-    image: "https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop",
-    featured: false,
-    available: "Disponible 10 Feb",
-    type: "studio"
-  },
-  {
-    id: 7,
-    title: "Casa Familiar en Zona Residencial",
-    location: "Chamartín, Madrid",
-    price: 2800,
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 120,
-    image: "https://images.unsplash.com/photo-1448630360428-65456885c650?w=400&h=300&fit=crop",
-    featured: false,
-    available: "Disponible Ahora",
-    type: "house"
-  },
-  {
-    id: 8,
-    title: "Habitación en Piso Compartido",
-    location: "Moncloa, Madrid",
-    price: 650,
-    bedrooms: 1,
-    bathrooms: 1,
-    area: 15,
-    image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop",
-    featured: false,
-    available: "Disponible Ahora",
-    type: "room"
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const Search = () => {
   const [searchParams] = useSearchParams();
-  const [filteredProperties, setFilteredProperties] = useState(allProperties);
+  const [filteredProperties, setFilteredProperties] = useState([]);
+  const [allProperties, setAllProperties] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     location: searchParams.get('location') || '',
     propertyType: searchParams.get('type') || 'any',
@@ -125,6 +20,58 @@ const Search = () => {
     bedrooms: 'any'
   });
   const { t } = useLanguage();
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
+  const fetchListings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      // Transform database listings to match the expected format
+      const transformedListings = data?.map(listing => ({
+        id: listing.id,
+        title: `${listing.property_type} en ${listing.town}`,
+        location: `${listing.town}${listing.postcode ? `, ${listing.postcode}` : ''}`,
+        price: listing.monthly_rent || listing.weekly_rent * 4 || 0,
+        bedrooms: listing.bedrooms || 1,
+        bathrooms: listing.bathrooms || 1,
+        area: 70, // Default area since it's not in our database
+        image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
+        featured: false,
+        available: "Disponible Ahora",
+        type: getPropertyTypeMapping(listing.property_type)
+      })) || [];
+
+      setAllProperties(transformedListings);
+      setFilteredProperties(transformedListings);
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getPropertyTypeMapping = (dbType) => {
+    const mapping = {
+      'studio': 'studio',
+      'bedsit': 'studio',
+      'flat': 'flat',
+      'penthouse': 'flat',
+      'maisonette': 'flat',
+      'detached': 'house',
+      'semi-detached': 'house',
+      'terraced': 'house',
+      'bungalow': 'house'
+    };
+    return mapping[dbType] || 'flat';
+  };
 
   useEffect(() => {
     let filtered = allProperties;
@@ -160,7 +107,22 @@ const Search = () => {
     }
 
     setFilteredProperties(filtered);
-  }, [filters]);
+  }, [filters, allProperties]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando propiedades...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

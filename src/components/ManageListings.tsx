@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Eye, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Edit, Eye, Trash2, Upload, Play } from "lucide-react";
 import { useListings } from "@/hooks/useListings";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ManageListingsProps {
   onBack: () => void;
@@ -36,6 +37,86 @@ const ManageListings = ({ onBack, onCreateNew }: ManageListingsProps) => {
       });
     }
     setIsLoading(false);
+  };
+
+  const publishListing = async (listingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: 'active' })
+        .eq('id', listingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Anuncio publicado!",
+        description: "Tu anuncio está ahora activo y visible para inquilinos.",
+      });
+
+      // Reload listings to reflect the change
+      loadListings();
+    } catch (error: any) {
+      console.error('Error publishing listing:', error);
+      toast({
+        title: "Error al publicar",
+        description: "No se pudo publicar el anuncio. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const pauseListing = async (listingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: 'paused' })
+        .eq('id', listingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Anuncio pausado",
+        description: "Tu anuncio ha sido pausado y ya no es visible.",
+      });
+
+      loadListings();
+    } catch (error: any) {
+      console.error('Error pausing listing:', error);
+      toast({
+        title: "Error al pausar",
+        description: "No se pudo pausar el anuncio. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteListing = async (listingId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este anuncio? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', listingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Anuncio eliminado",
+        description: "El anuncio ha sido eliminado permanentemente.",
+      });
+
+      loadListings();
+    } catch (error: any) {
+      console.error('Error deleting listing:', error);
+      toast({
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el anuncio. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -154,7 +235,7 @@ const ManageListings = ({ onBack, onCreateNew }: ManageListingsProps) => {
                   </p>
                 )}
 
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 flex-wrap gap-2">
                   <Button variant="outline" size="sm">
                     <Eye className="mr-2 h-4 w-4" />
                     Ver
@@ -163,7 +244,48 @@ const ManageListings = ({ onBack, onCreateNew }: ManageListingsProps) => {
                     <Edit className="mr-2 h-4 w-4" />
                     Editar
                   </Button>
-                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                  
+                  {listing.status === 'draft' && (
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={() => publishListing(listing.id)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Play className="mr-2 h-4 w-4" />
+                      Publicar
+                    </Button>
+                  )}
+                  
+                  {listing.status === 'active' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => pauseListing(listing.id)}
+                      className="text-orange-600 hover:text-orange-700"
+                    >
+                      Pausar
+                    </Button>
+                  )}
+                  
+                  {listing.status === 'paused' && (
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={() => publishListing(listing.id)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Play className="mr-2 h-4 w-4" />
+                      Reactivar
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => deleteListing(listing.id)}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Eliminar
                   </Button>
