@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -16,7 +15,7 @@ const Search = () => {
   const [filters, setFilters] = useState({
     location: searchParams.get('location') || '',
     propertyType: searchParams.get('type') || 'any',
-    priceRange: [500, 2000],
+    priceRange: [0, 200000], // Much more inclusive range
     bedrooms: 'any'
   });
   const { t } = useLanguage();
