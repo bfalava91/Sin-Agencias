@@ -132,6 +132,41 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          body: string
+          from_user_id: string
+          id: string
+          listing_id: string
+          sent_at: string
+          to_user_id: string
+        }
+        Insert: {
+          body: string
+          from_user_id: string
+          id?: string
+          listing_id: string
+          sent_at?: string
+          to_user_id: string
+        }
+        Update: {
+          body?: string
+          from_user_id?: string
+          id?: string
+          listing_id?: string
+          sent_at?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

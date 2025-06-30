@@ -5,11 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
   id: string;
-  user_id: string;
+  email: string;
   full_name: string | null;
   role: 'tenant' | 'landlord' | null;
   phone: string | null;
+  avatar_url: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
@@ -73,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -109,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Create profile if user was created successfully
     if (data.user && !error) {
-      const profileError = await createUserProfile(data.user.id, fullName, role);
+      const profileError = await createUserProfile(data.user.id, data.user.email!, fullName, role);
       if (profileError) {
         console.error('Profile creation error:', profileError);
       }
@@ -118,13 +120,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const createUserProfile = async (userId: string, fullName: string, role: 'tenant' | 'landlord') => {
+  const createUserProfile = async (userId: string, email: string, fullName: string, role: 'tenant' | 'landlord') => {
     try {
       const { error } = await supabase
         .from('profiles')
         .insert([
           {
-            user_id: userId,
+            id: userId,
+            email: email,
             full_name: fullName,
             role: role
           }
@@ -171,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .select()
         .single();
 
