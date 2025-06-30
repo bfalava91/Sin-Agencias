@@ -19,9 +19,6 @@ interface Message {
   listing_id: string;
   from_user_id: string;
   to_user_id: string;
-  sender_name?: string;
-  recipient_name?: string;
-  listing_title?: string;
 }
 
 const Messages = () => {
@@ -49,45 +46,27 @@ const Messages = () => {
       // Fetch inbox messages (messages received by the current user)
       const { data: inboxData, error: inboxError } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender:profiles!messages_from_user_id_fkey(full_name),
-          listing:listings!messages_listing_id_fkey(id, property_type, bedrooms, neighborhood, town, postcode)
-        `)
+        .select('id, body, sent_at, listing_id, from_user_id, to_user_id')
         .eq('to_user_id', user.id)
         .order('sent_at', { ascending: false });
 
       if (inboxError) {
         console.error('Error fetching inbox messages:', inboxError);
       } else {
-        const transformedInbox = inboxData?.map(msg => ({
-          ...msg,
-          sender_name: msg.sender?.full_name || 'Usuario desconocido',
-          listing_title: generateListingTitle(msg.listing)
-        })) || [];
-        setInboxMessages(transformedInbox);
+        setInboxMessages(inboxData || []);
       }
 
       // Fetch sent messages (messages sent by the current user)
       const { data: sentData, error: sentError } = await supabase
         .from('messages')
-        .select(`
-          *,
-          recipient:profiles!messages_to_user_id_fkey(full_name),
-          listing:listings!messages_listing_id_fkey(id, property_type, bedrooms, neighborhood, town, postcode)
-        `)
+        .select('id, body, sent_at, listing_id, from_user_id, to_user_id')
         .eq('from_user_id', user.id)
         .order('sent_at', { ascending: false });
 
       if (sentError) {
         console.error('Error fetching sent messages:', sentError);
       } else {
-        const transformedSent = sentData?.map(msg => ({
-          ...msg,
-          recipient_name: msg.recipient?.full_name || 'Usuario desconocido',
-          listing_title: generateListingTitle(msg.listing)
-        })) || [];
-        setSentMessages(transformedSent);
+        setSentMessages(sentData || []);
       }
 
     } catch (error) {
@@ -95,47 +74,6 @@ const Messages = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const generateListingTitle = (listing: any) => {
-    if (!listing) return 'Propiedad no disponible';
-    
-    const propertyType = getDisplayPropertyType(listing.property_type);
-    const bedrooms = listing.bedrooms ? `${listing.bedrooms} hab.` : '';
-    
-    let location = '';
-    if (listing.neighborhood) {
-      location = listing.neighborhood;
-    } else if (listing.town) {
-      location = listing.town;
-    } else if (listing.postcode) {
-      location = listing.postcode;
-    }
-    
-    let title = propertyType;
-    if (bedrooms) {
-      title += ` ${bedrooms}`;
-    }
-    if (location) {
-      title += ` en ${location}`;
-    }
-    
-    return title;
-  };
-
-  const getDisplayPropertyType = (dbType: string) => {
-    const displayMapping: { [key: string]: string } = {
-      'studio': 'Estudio',
-      'bedsit': 'Estudio',
-      'flat': 'Piso',
-      'penthouse': 'Ático',
-      'maisonette': 'Dúplex',
-      'detached': 'Casa Individual',
-      'semi-detached': 'Casa Adosada',
-      'terraced': 'Casa en Hilera',
-      'bungalow': 'Bungalow'
-    };
-    return displayMapping[dbType] || 'Propiedad';
   };
 
   const MessageCard = ({ message, type }: { message: Message; type: 'inbox' | 'sent' }) => (
@@ -150,17 +88,17 @@ const Messages = () => {
                 className="p-0 h-auto text-lg font-semibold text-blue-600 hover:text-blue-800"
                 onClick={() => navigate(`/property/${message.listing_id}`)}
               >
-                {message.listing_title}
+                Propiedad {message.listing_id.slice(0, 8)}
               </Button>
             </CardTitle>
             <div className="flex items-center text-sm text-gray-600 mb-2">
               {type === 'inbox' ? (
                 <>
-                  <span className="font-medium">De: {message.sender_name}</span>
+                  <span className="font-medium">De: {message.from_user_id.slice(0, 8)}</span>
                 </>
               ) : (
                 <>
-                  <span className="font-medium">Para: {message.recipient_name}</span>
+                  <span className="font-medium">Para: {message.to_user_id.slice(0, 8)}</span>
                 </>
               )}
             </div>
