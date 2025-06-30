@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,9 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MessageSquare, Send, Inbox, Calendar, Home } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, MessageSquare, Send, Inbox, Calendar, Home, Reply } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -24,9 +27,12 @@ const Messages = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
   const [inboxMessages, setInboxMessages] = useState<Message[]>([]);
   const [sentMessages, setSentMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [replyTexts, setReplyTexts] = useState<{ [key: string]: string }>({});
+  const [sendingReplies, setSendingReplies] = useState<{ [key: string]: boolean }>({});
   
   // Get initial tab from URL params or default to 'inbox'
   const initialTab = searchParams.get('tab') === 'sent' ? 'sent' : 'inbox';
@@ -88,6 +94,78 @@ const Messages = () => {
     }
   };
 
+  const handleReplyTextChange = (messageId: string, value: string) => {
+    setReplyTexts(prev => ({
+      ...prev,
+      [messageId]: value
+    }));
+  };
+
+  const handleSendReply = async (originalMessage: Message) => {
+    if (!user) return;
+
+    const replyText = replyTexts[originalMessage.id]?.trim();
+    if (!replyText) {
+      toast({
+        title: "Error",
+        description: "Por favor, escribe una respuesta antes de enviar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSendingReplies(prev => ({
+      ...prev,
+      [originalMessage.id]: true
+    }));
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          from_user_id: user.id,
+          to_user_id: originalMessage.from_user_id,
+          listing_id: originalMessage.listing_id,
+          body: replyText
+        });
+
+      if (error) {
+        console.error('Error sending reply:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo enviar la respuesta. Inténtalo de nuevo.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Éxito",
+          description: "Respuesta enviada correctamente.",
+        });
+        
+        // Clear the reply text
+        setReplyTexts(prev => ({
+          ...prev,
+          [originalMessage.id]: ''
+        }));
+        
+        // Refresh messages to show the new reply in sent messages
+        fetchMessages();
+      }
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar la respuesta. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingReplies(prev => ({
+        ...prev,
+        [originalMessage.id]: false
+      }));
+    }
+  };
+
   const MessageCard = ({ message, type }: { message: Message; type: 'inbox' | 'sent' }) => (
     <Card className="mb-4 hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
@@ -125,7 +203,32 @@ const Messages = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-gray-700 whitespace-pre-wrap">{message.body}</p>
+        <p className="text-gray-700 whitespace-pre-wrap mb-4">{message.body}</p>
+        
+        {type === 'inbox' && (
+          <div className="border-t pt-4">
+            <div className="flex items-center mb-3">
+              <Reply className="h-4 w-4 mr-2 text-gray-600" />
+              <span className="font-medium text-gray-700">Responder</span>
+            </div>
+            <div className="space-y-3">
+              <Textarea
+                placeholder="Escribe tu respuesta aquí..."
+                value={replyTexts[message.id] || ''}
+                onChange={(e) => handleReplyTextChange(message.id, e.target.value)}
+                className="min-h-[100px]"
+              />
+              <Button
+                onClick={() => handleSendReply(message)}
+                disabled={sendingReplies[message.id] || !replyTexts[message.id]?.trim()}
+                className="flex items-center"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {sendingReplies[message.id] ? 'Enviando...' : 'Enviar Respuesta'}
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
