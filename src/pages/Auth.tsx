@@ -30,26 +30,6 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
-  const checkUserExists = async (email: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', email)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error checking user existence:', error);
-        return false;
-      }
-
-      return !!data;
-    } catch (error) {
-      console.error('Error checking user existence:', error);
-      return false;
-    }
-  };
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -88,22 +68,13 @@ const Auth = () => {
       return;
     }
 
-    // Check if user already exists
-    const userExists = await checkUserExists(email);
-    if (userExists) {
-      toast({
-        title: "Usuario ya registrado",
-        description: "Este email ya está registrado. Intenta iniciar sesión.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-
     const { error } = await signUp(email, password, fullName, role);
 
     if (error) {
-      if (error.message.includes('User already registered')) {
+      // Check for specific error messages that indicate user already exists
+      if (error.message.includes('User already registered') || 
+          error.message.includes('already registered') ||
+          error.message.includes('already been registered')) {
         toast({
           title: "Usuario ya registrado",
           description: "Este email ya está registrado. Intenta iniciar sesión.",
