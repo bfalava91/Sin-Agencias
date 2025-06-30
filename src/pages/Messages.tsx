@@ -1,17 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MessageCard from "@/components/MessageCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, MessageSquare, Send, Inbox, Calendar, Home, Reply } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, Inbox } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -166,73 +163,6 @@ const Messages = () => {
     }
   };
 
-  const MessageCard = ({ message, type }: { message: Message; type: 'inbox' | 'sent' }) => (
-    <Card className="mb-4 hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="text-lg mb-2 flex items-center">
-              <Home className="h-4 w-4 mr-2 text-blue-600" />
-              <Button
-                variant="link"
-                className="p-0 h-auto text-lg font-semibold text-blue-600 hover:text-blue-800"
-                onClick={() => navigate(`/property/${message.listing_id}`)}
-              >
-                Propiedad {message.listing_id.slice(0, 8)}
-              </Button>
-            </CardTitle>
-            <div className="flex items-center text-sm text-gray-600 mb-2">
-              {type === 'inbox' ? (
-                <>
-                  <span className="font-medium">De: {message.from_user_id.slice(0, 8)}</span>
-                </>
-              ) : (
-                <>
-                  <span className="font-medium">Para: {message.to_user_id.slice(0, 8)}</span>
-                </>
-              )}
-            </div>
-            <div className="flex items-center text-xs text-gray-500">
-              <Calendar className="h-3 w-3 mr-1" />
-              {formatDistanceToNow(new Date(message.sent_at), { addSuffix: true })}
-            </div>
-          </div>
-          <Badge variant={type === 'inbox' ? 'default' : 'secondary'}>
-            {type === 'inbox' ? 'Recibido' : 'Enviado'}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-gray-700 whitespace-pre-wrap mb-4">{message.body}</p>
-        
-        {type === 'inbox' && (
-          <div className="border-t pt-4">
-            <div className="flex items-center mb-3">
-              <Reply className="h-4 w-4 mr-2 text-gray-600" />
-              <span className="font-medium text-gray-700">Responder</span>
-            </div>
-            <div className="space-y-3">
-              <Textarea
-                placeholder="Escribe tu respuesta aquí..."
-                value={replyTexts[message.id] || ''}
-                onChange={(e) => handleReplyTextChange(message.id, e.target.value)}
-                className="min-h-[100px]"
-              />
-              <Button
-                onClick={() => handleSendReply(message)}
-                disabled={sendingReplies[message.id] || !replyTexts[message.id]?.trim()}
-                className="flex items-center"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {sendingReplies[message.id] ? 'Enviando...' : 'Enviar Respuesta'}
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-
   if (!user) {
     return null;
   }
@@ -298,7 +228,15 @@ const Messages = () => {
               </Card>
             ) : (
               inboxMessages.map((message) => (
-                <MessageCard key={message.id} message={message} type="inbox" />
+                <MessageCard 
+                  key={message.id} 
+                  message={message} 
+                  type="inbox"
+                  replyText={replyTexts[message.id] || ''}
+                  onReplyTextChange={(value) => handleReplyTextChange(message.id, value)}
+                  onSendReply={() => handleSendReply(message)}
+                  isSendingReply={sendingReplies[message.id] || false}
+                />
               ))
             )}
           </TabsContent>
@@ -318,7 +256,15 @@ const Messages = () => {
               </Card>
             ) : (
               sentMessages.map((message) => (
-                <MessageCard key={message.id} message={message} type="sent" />
+                <MessageCard 
+                  key={message.id} 
+                  message={message} 
+                  type="sent"
+                  replyText=""
+                  onReplyTextChange={() => {}}
+                  onSendReply={() => {}}
+                  isSendingReply={false}
+                />
               ))
             )}
           </TabsContent>
