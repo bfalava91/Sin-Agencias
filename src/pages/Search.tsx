@@ -59,8 +59,56 @@ const Search = () => {
       console.log('Raw listings from database:', data);
 
       const transformedListings = data?.map(listing => {
-        console.log('Transforming listing:', listing);
+        console.log('Transforming listing:', listing.id);
+        console.log('Listing images type:', typeof listing.images);
         console.log('Listing images:', listing.images);
+        
+        // Safely handle images array - ensure it's always an array
+        const safeImages = Array.isArray(listing.images) ? [...listing.images] : [];
+        
+        // Create a clean copy of the original listing without circular references
+        const cleanOriginal = {
+          id: listing.id,
+          user_id: listing.user_id,
+          is_readvertising: listing.is_readvertising,
+          postcode: listing.postcode,
+          flat_number: listing.flat_number,
+          address_line_2: listing.address_line_2,
+          address_line_3: listing.address_line_3,
+          town: listing.town,
+          neighborhood: listing.neighborhood,
+          advert_type: listing.advert_type,
+          property_type: listing.property_type,
+          bedrooms: listing.bedrooms,
+          bathrooms: listing.bathrooms,
+          square_meters: listing.square_meters,
+          furnishing: listing.furnishing,
+          description: listing.description,
+          monthly_rent: listing.monthly_rent,
+          weekly_rent: listing.weekly_rent,
+          deposit: listing.deposit,
+          min_tenancy: listing.min_tenancy,
+          max_tenants: listing.max_tenants,
+          move_in_date: listing.move_in_date,
+          bills_included: listing.bills_included,
+          garden_access: listing.garden_access,
+          parking: listing.parking,
+          fireplace: listing.fireplace,
+          students_allowed: listing.students_allowed,
+          families_allowed: listing.families_allowed,
+          dss_accepted: listing.dss_accepted,
+          pets_allowed: listing.pets_allowed,
+          smokers_allowed: listing.smokers_allowed,
+          students_only: listing.students_only,
+          availability: listing.availability,
+          remote_viewings: listing.remote_viewings,
+          youtube_url: listing.youtube_url,
+          status: listing.status,
+          created_at: listing.created_at,
+          updated_at: listing.updated_at,
+          features: listing.features,
+          images: safeImages // Use the safe copy
+        };
         
         const transformed = {
           id: listing.id,
@@ -70,7 +118,7 @@ const Search = () => {
           bedrooms: listing.bedrooms || 1,
           bathrooms: listing.bathrooms || 1,
           area: 70,
-          images: listing.images || [], // Pass images directly
+          images: safeImages, // Use the safe copy here too
           featured: false,
           available: "Disponible Ahora",
           type: listing.property_type || 'flat',
@@ -81,15 +129,16 @@ const Search = () => {
           features: listing.features,
           move_in_date: listing.move_in_date,
           property_type: listing.property_type,
-          // Store original listing data for filtering
-          original: listing
+          status: listing.status,
+          // Store clean original listing data for filtering
+          original: cleanOriginal
         };
         
-        console.log('Transformed listing:', transformed);
+        console.log('Transformed listing:', transformed.id, 'Images count:', transformed.images.length);
         return transformed;
       }) || [];
 
-      console.log('All transformed listings:', transformedListings);
+      console.log('All transformed listings:', transformedListings.length);
       setAllProperties(transformedListings);
       setFilteredProperties(transformedListings);
     } catch (error) {
