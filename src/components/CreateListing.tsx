@@ -76,6 +76,9 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
   useEffect(() => {
     // If editing, populate form with existing data
     if (editingListing) {
+      console.log('Editing listing - populating form with existing data:', editingListing);
+      console.log('Existing listing images:', editingListing.images);
+      
       setFormData({
         isReadvertising: editingListing.is_readvertising || false,
         postcode: editingListing.postcode || "",
@@ -110,10 +113,12 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
         remoteViewings: editingListing.remote_viewings || false,
         youtubeUrl: editingListing.youtube_url || "",
         features: editingListing.features || "",
-        // Ensure images is always an array, never null
-        images: Array.isArray(editingListing.images) ? editingListing.images : [],
+        // Ensure images is always an array, never null - strict enforcement for edit mode
+        images: Array.isArray(editingListing.images) ? [...editingListing.images] : [],
         agreedToTerms: true // Already agreed when creating
       });
+
+      console.log('Form data images after setting:', Array.isArray(editingListing.images) ? [...editingListing.images] : []);
 
       // Parse features into individual fields
       if (editingListing.features) {
@@ -143,11 +148,16 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Enhanced images handler with strict array enforcement
+  // Unified images handler with strict array enforcement - works identically for create and edit
   const handleImagesChange = (newImages: string[]) => {
     console.log('HandleImagesChange called with:', newImages);
+    console.log('HandleImagesChange - newImages type:', typeof newImages);
+    console.log('HandleImagesChange - newImages length:', newImages?.length);
+    
     // Ensure we always have an array, never null or undefined
-    const safeImages = Array.isArray(newImages) ? newImages : [];
+    const safeImages = Array.isArray(newImages) ? [...newImages] : [];
+    console.log('HandleImagesChange - safeImages:', safeImages);
+    
     setFormData(prev => ({ 
       ...prev, 
       images: safeImages
@@ -198,10 +208,10 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
       }
     }
 
-    // Ensure images is always an array before submission
+    // Ensure images is always an array before submission - identical logic for create and edit
     const safeFormData = {
       ...formData,
-      images: Array.isArray(formData.images) ? formData.images : []
+      images: Array.isArray(formData.images) ? [...formData.images] : []
     };
 
     // Debug logging before submission
@@ -212,12 +222,15 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     
     let result;
     if (editingListing) {
+      console.log('Updating existing listing with ID:', editingListing.id);
       result = await updateListing(editingListing.id, safeFormData, publish);
     } else {
+      console.log('Creating new listing');
       result = await createListing(safeFormData, publish);
     }
     
     if (result.success) {
+      console.log('Form submission successful');
       onBack();
     }
   };
@@ -701,7 +714,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
           </CardContent>
         </Card>
 
-        {/* Photos & Videos */}
+        {/* Photos & Videos - IDENTICAL LOGIC FOR BOTH CREATE AND EDIT */}
         <Card>
           <CardHeader>
             <CardTitle>Fotos y Videos *</CardTitle>
@@ -714,7 +727,16 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
               <p className="text-sm text-gray-500">
                 Imágenes actuales: {formData.images.length}
               </p>
+              {editingListing && (
+                <p className="text-sm text-blue-600">
+                  Modo edición: Las imágenes se actualizarán cuando guardes el anuncio
+                </p>
+              )}
             </div>
+            {/* 
+              CRITICAL: Using the exact same ImageUpload component with identical props and callbacks
+              This ensures complete consistency between create and edit modes
+            */}
             <ImageUpload
               images={formData.images}
               onImagesChange={handleImagesChange}
