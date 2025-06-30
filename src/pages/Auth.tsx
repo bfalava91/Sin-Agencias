@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,16 +23,21 @@ const Auth = () => {
   const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
   const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false);
   
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, profile, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && user) {
-      navigate('/profile');
+      // If user is authenticated but no profile exists, redirect to complete profile
+      if (!profile) {
+        navigate('/complete-profile');
+      } else {
+        navigate('/profile');
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, profile, loading, navigate]);
 
   // Don't render anything while loading or if user is authenticated
   if (loading || user) {
@@ -131,7 +137,7 @@ const Auth = () => {
     } else {
       toast({
         title: "¡Registro exitoso!",
-        description: "Tu cuenta ha sido creada correctamente. Redirigiendo al perfil...",
+        description: "Tu cuenta ha sido creada correctamente. Redirigiendo para completar tu perfil...",
       });
       // Clear form
       setEmail('');
@@ -140,9 +146,9 @@ const Auth = () => {
       setFullName('');
       setRole('tenant');
       
-      // Redirect to profile page after successful registration
+      // Redirect to complete profile page after successful registration
       setTimeout(() => {
-        navigate('/profile');
+        navigate('/complete-profile');
       }, 1000);
     }
 

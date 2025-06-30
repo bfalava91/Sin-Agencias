@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import MessageLandlord from "./pages/MessageLandlord";
 import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
+import CompleteProfile from "./pages/CompleteProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/messages" element={<Messages />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/complete-profile" element={<CompleteProfile />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
