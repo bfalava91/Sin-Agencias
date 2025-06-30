@@ -108,19 +108,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Frontend - Register function response:', data);
       console.log('Frontend - Register function error:', error);
 
+      // Handle function invocation errors (network, etc.)
       if (error) {
-        console.log('Frontend - Registration failed with error:', error);
+        console.log('Frontend - Function invocation failed:', error);
         return { 
           error: { 
-            message: error.message || 'Registration failed' 
+            message: 'Network error or server unavailable' 
           } 
         };
       }
 
-      if (data?.error) {
-        console.log('Frontend - Registration failed with data error:', data.error);
+      // Handle application-level errors from the function
+      if (!data?.success) {
+        console.log('Frontend - Registration failed:', data?.error);
         
-        if (data.error === 'Email already registered') {
+        if (data?.error === 'Email already registered') {
           return { 
             error: { 
               message: 'User already registered',
@@ -131,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         return { 
           error: { 
-            message: data.error || 'Registration failed' 
+            message: data?.error || 'Registration failed' 
           } 
         };
       }

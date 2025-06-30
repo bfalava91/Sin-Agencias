@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -39,8 +40,11 @@ serve(async (req) => {
     // Validate required fields
     if (!email || !password || !fullName || !role) {
       console.log('Register API - Missing required fields')
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Missing required fields' 
+      }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -66,22 +70,24 @@ serve(async (req) => {
       // Check if it's a unique constraint violation (user already exists)
       if (error.message.includes('User already registered') || 
           error.message.includes('already been registered') ||
-          error.code === '23505') {
+          error.code === 'email_exists') {
         console.log('Register API - Email already registered')
         return new Response(JSON.stringify({ 
+          success: false,
           error: 'Email already registered',
           message: 'Ya existe un usuario con este correo.'
         }), {
-          status: 409,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       // Other errors
       return new Response(JSON.stringify({ 
+        success: false,
         error: error.message || 'Registration failed' 
       }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -100,9 +106,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Register API - Unexpected error:', error)
     return new Response(JSON.stringify({ 
+      success: false,
       error: 'Internal server error' 
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
