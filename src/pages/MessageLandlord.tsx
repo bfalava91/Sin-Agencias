@@ -87,6 +87,17 @@ const MessageLandlord = () => {
 
       setListing(listingData);
 
+      // Check if the current user is trying to message themselves
+      if (user && listingData.user_id === user.id) {
+        toast({
+          title: "Error",
+          description: "No puedes enviar mensajes a tus propias propiedades",
+          variant: "destructive",
+        });
+        navigate(-1);
+        return;
+      }
+
       // Fetch landlord profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -127,6 +138,16 @@ const MessageLandlord = () => {
       toast({
         title: "Error",
         description: "Información de usuario o propiedad no disponible",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Double-check to prevent self-messaging
+    if (listing.user_id === user.id) {
+      toast({
+        title: "Error",
+        description: "No puedes enviar mensajes a tus propias propiedades",
         variant: "destructive",
       });
       return;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,13 +12,26 @@ import { ArrowLeft, MessageSquare, Send, Inbox } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-interface Message {
+interface MessageDetail {
   id: string;
   body: string;
   sent_at: string;
   listing_id: string;
   from_user_id: string;
   to_user_id: string;
+  from_user_name?: string;
+  to_user_name?: string;
+}
+
+interface MessageThread {
+  listing_id: string;
+  property_title: string;
+  property_location: string;
+  availability?: string;
+  messages: MessageDetail[];
+  other_user_id: string;
+  other_user_name: string;
+  last_message_at: string;
 }
 
 const Messages = () => {
@@ -25,11 +39,12 @@ const Messages = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const [inboxMessages, setInboxMessages] = useState<Message[]>([]);
-  const [sentMessages, setSentMessages] = useState<Message[]>([]);
+  const [inboxThreads, setInboxThreads] = useState<MessageThread[]>([]);
+  const [sentThreads, setSentThreads] = useState<MessageThread[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [replyTexts, setReplyTexts] = useState<{ [key: string]: string }>({});
   const [sendingReplies, setSendingReplies] = useState<{ [key: string]: boolean }>({});
+  const [expandedThreads, setExpandedThreads] = useState<{ [key: string]: boolean }>({});
   
   // Get initial tab from URL params or default to 'inbox'
   const initialTab = searchParams.get('tab') === 'sent' ? 'sent' : 'inbox';
@@ -41,7 +56,7 @@ const Messages = () => {
       return;
     }
     
-    fetchMessages();
+    fetchMessageThreads();
   }, [user]);
 
   // Update active tab when URL params change
@@ -52,56 +67,150 @@ const Messages = () => {
     }
   }, [searchParams]);
 
-  const fetchMessages = async () => {
+  const fetchMessageThreads = async () => {
     if (!user) return;
 
     try {
       setIsLoading(true);
 
-      // Fetch inbox messages (messages received by the current user)
-      const { data: inboxData, error: inboxError } = await supabase
+      // Fetch all messages involving the current user with joined data
+      const { data: messagesData, error } = await supabase
         .from('messages')
-        .select('id, body, sent_at, listing_id, from_user_id, to_user_id')
-        .eq('to_user_id', user.id)
+        .select(`
+          id,
+          body,
+          sent_at,
+          listing_id,
+          from_user_id,
+          to_user_id,
+          from_profile:profiles!messages_from_user_id_fkey(full_name),
+          to_profile:profiles!messages_to_user_id_fkey(full_name),
+          listing:listings!messages_listing_id_fkey(
+            address_line_2,
+            town,
+            postcode,
+            property_type,
+            bedrooms,
+            availability
+          )
+        `)
+        .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
         .order('sent_at', { ascending: false });
 
-      if (inboxError) {
-        console.error('Error fetching inbox messages:', inboxError);
-      } else {
-        setInboxMessages(inboxData || []);
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
       }
 
-      // Fetch sent messages (messages sent by the current user)
-      const { data: sentData, error: sentError } = await supabase
-        .from('messages')
-        .select('id, body, sent_at, listing_id, from_user_id, to_user_id')
-        .eq('from_user_id', user.id)
-        .order('sent_at', { ascending: false });
+      console.log('Fetched messages with joins:', messagesData);
 
-      if (sentError) {
-        console.error('Error fetching sent messages:', sentError);
-      } else {
-        setSentMessages(sentData || []);
-      }
+      // Transform messages to include user names
+      const transformedMessages: MessageDetail[] = (messagesData || []).map(msg => ({
+        id: msg.id,
+        body: msg.body,
+        sent_at: msg.sent_at,
+        listing_id: msg.listing_id,
+        from_user_id: msg.from_user_id,
+        to_user_id: msg.to_user_id,
+        from_user_name: (msg.from_profile as any)?.full_name || 'Usuario',
+        to_user_name: (msg.to_profile as any)?.full_name || 'Usuario',
+        listing: msg.listing
+      }));
+
+      // Group messages into threads
+      const inboxThreadsMap = new Map<string, MessageThread>();
+      const sentThreadsMap = new Map<string, MessageThread>();
+
+      transformedMessages.forEach(message => {
+        const isIncoming = message.to_user_id === user.id;
+        const threadKey = `${message.listing_id}-${isIncoming ? message.from_user_id : message.to_user_id}`;
+        const listing = (message as any).listing;
+        
+        const propertyTitle = listing 
+          ? `${listing.property_type || 'Propiedad'} ${listing.bedrooms ? `de ${listing.bedrooms} dormitorio${listing.bedrooms > 1 ? 's' : ''}` : ''}, ${listing.town || 'Ubicación'}`.trim()
+          : `Propiedad ${message.listing_id.slice(0, 8)}`;
+        
+        const propertyLocation = listing 
+          ? `${listing.address_line_2 || ''} ${listing.town || ''} ${listing.postcode || ''}`.trim()
+          : 'Ubicación no disponible';
+
+        if (isIncoming) {
+          // Inbox thread
+          if (!inboxThreadsMap.has(threadKey)) {
+            inboxThreadsMap.set(threadKey, {
+              listing_id: message.listing_id,
+              property_title: propertyTitle,
+              property_location: propertyLocation,
+              availability: listing?.availability,
+              messages: [],
+              other_user_id: message.from_user_id,
+              other_user_name: message.from_user_name || 'Usuario',
+              last_message_at: message.sent_at
+            });
+          }
+          const thread = inboxThreadsMap.get(threadKey)!;
+          thread.messages.push(message);
+          if (new Date(message.sent_at) > new Date(thread.last_message_at)) {
+            thread.last_message_at = message.sent_at;
+          }
+        } else {
+          // Sent thread
+          if (!sentThreadsMap.has(threadKey)) {
+            sentThreadsMap.set(threadKey, {
+              listing_id: message.listing_id,
+              property_title: propertyTitle,
+              property_location: propertyLocation,
+              availability: listing?.availability,
+              messages: [],
+              other_user_id: message.to_user_id,
+              other_user_name: message.to_user_name || 'Usuario',
+              last_message_at: message.sent_at
+            });
+          }
+          const thread = sentThreadsMap.get(threadKey)!;
+          thread.messages.push(message);
+          if (new Date(message.sent_at) > new Date(thread.last_message_at)) {
+            thread.last_message_at = message.sent_at;
+          }
+        }
+      });
+
+      // Convert maps to arrays and sort by last message time
+      const inboxArray = Array.from(inboxThreadsMap.values()).sort(
+        (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+      );
+      
+      const sentArray = Array.from(sentThreadsMap.values()).sort(
+        (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+      );
+
+      setInboxThreads(inboxArray);
+      setSentThreads(sentArray);
 
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('Error fetching message threads:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleReplyTextChange = (messageId: string, value: string) => {
+  const getThreadKey = (thread: MessageThread) => {
+    return `${thread.listing_id}-${thread.other_user_id}`;
+  };
+
+  const handleReplyTextChange = (threadKey: string, value: string) => {
     setReplyTexts(prev => ({
       ...prev,
-      [messageId]: value
+      [threadKey]: value
     }));
   };
 
-  const handleSendReply = async (originalMessage: Message) => {
+  const handleSendReply = async (thread: MessageThread) => {
     if (!user) return;
 
-    const replyText = replyTexts[originalMessage.id]?.trim();
+    const threadKey = getThreadKey(thread);
+    const replyText = replyTexts[threadKey]?.trim();
+    
     if (!replyText) {
       toast({
         title: "Error",
@@ -113,7 +222,7 @@ const Messages = () => {
 
     setSendingReplies(prev => ({
       ...prev,
-      [originalMessage.id]: true
+      [threadKey]: true
     }));
 
     try {
@@ -121,8 +230,8 @@ const Messages = () => {
         .from('messages')
         .insert({
           from_user_id: user.id,
-          to_user_id: originalMessage.from_user_id,
-          listing_id: originalMessage.listing_id,
+          to_user_id: thread.other_user_id,
+          listing_id: thread.listing_id,
           body: replyText
         });
 
@@ -142,11 +251,11 @@ const Messages = () => {
         // Clear the reply text
         setReplyTexts(prev => ({
           ...prev,
-          [originalMessage.id]: ''
+          [threadKey]: ''
         }));
         
-        // Refresh messages to show the new reply in sent messages
-        fetchMessages();
+        // Refresh threads to show the new reply
+        fetchMessageThreads();
       }
     } catch (error) {
       console.error('Error sending reply:', error);
@@ -158,9 +267,16 @@ const Messages = () => {
     } finally {
       setSendingReplies(prev => ({
         ...prev,
-        [originalMessage.id]: false
+        [threadKey]: false
       }));
     }
+  };
+
+  const handleToggleExpanded = (threadKey: string) => {
+    setExpandedThreads(prev => ({
+      ...prev,
+      [threadKey]: !prev[threadKey]
+    }));
   };
 
   if (!user) {
@@ -205,16 +321,16 @@ const Messages = () => {
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="inbox" className="flex items-center">
               <Inbox className="h-4 w-4 mr-2" />
-              Bandeja de Entrada ({inboxMessages.length})
+              Bandeja de Entrada ({inboxThreads.length})
             </TabsTrigger>
             <TabsTrigger value="sent" className="flex items-center">
               <Send className="h-4 w-4 mr-2" />
-              Mensajes Enviados ({sentMessages.length})
+              Mensajes Enviados ({sentThreads.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="inbox" className="space-y-4">
-            {inboxMessages.length === 0 ? (
+            {inboxThreads.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-12">
                   <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -227,22 +343,27 @@ const Messages = () => {
                 </CardContent>
               </Card>
             ) : (
-              inboxMessages.map((message) => (
-                <MessageCard 
-                  key={message.id} 
-                  message={message} 
-                  type="inbox"
-                  replyText={replyTexts[message.id] || ''}
-                  onReplyTextChange={(value) => handleReplyTextChange(message.id, value)}
-                  onSendReply={() => handleSendReply(message)}
-                  isSendingReply={sendingReplies[message.id] || false}
-                />
-              ))
+              inboxThreads.map((thread) => {
+                const threadKey = getThreadKey(thread);
+                return (
+                  <MessageCard 
+                    key={threadKey}
+                    thread={thread}
+                    type="inbox"
+                    replyText={replyTexts[threadKey] || ''}
+                    onReplyTextChange={(value) => handleReplyTextChange(threadKey, value)}
+                    onSendReply={() => handleSendReply(thread)}
+                    isSendingReply={sendingReplies[threadKey] || false}
+                    isExpanded={expandedThreads[threadKey] || false}
+                    onToggleExpanded={() => handleToggleExpanded(threadKey)}
+                  />
+                );
+              })
             )}
           </TabsContent>
 
           <TabsContent value="sent" className="space-y-4">
-            {sentMessages.length === 0 ? (
+            {sentThreads.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-12">
                   <Send className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -255,17 +376,22 @@ const Messages = () => {
                 </CardContent>
               </Card>
             ) : (
-              sentMessages.map((message) => (
-                <MessageCard 
-                  key={message.id} 
-                  message={message} 
-                  type="sent"
-                  replyText=""
-                  onReplyTextChange={() => {}}
-                  onSendReply={() => {}}
-                  isSendingReply={false}
-                />
-              ))
+              sentThreads.map((thread) => {
+                const threadKey = getThreadKey(thread);
+                return (
+                  <MessageCard 
+                    key={threadKey}
+                    thread={thread}
+                    type="sent"
+                    replyText=""
+                    onReplyTextChange={() => {}}
+                    onSendReply={() => {}}
+                    isSendingReply={false}
+                    isExpanded={expandedThreads[threadKey] || false}
+                    onToggleExpanded={() => handleToggleExpanded(threadKey)}
+                  />
+                );
+              })
             )}
           </TabsContent>
         </Tabs>
