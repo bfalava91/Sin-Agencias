@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageSquare, Send, Inbox, Calendar, Home } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 
 interface Message {
@@ -24,9 +23,14 @@ interface Message {
 const Messages = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [inboxMessages, setInboxMessages] = useState<Message[]>([]);
   const [sentMessages, setSentMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Get initial tab from URL params or default to 'inbox'
+  const initialTab = searchParams.get('tab') === 'sent' ? 'sent' : 'inbox';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
     if (!user) {
@@ -36,6 +40,14 @@ const Messages = () => {
     
     fetchMessages();
   }, [user]);
+
+  // Update active tab when URL params change
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'sent' || tabParam === 'inbox') {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const fetchMessages = async () => {
     if (!user) return;
@@ -156,7 +168,7 @@ const Messages = () => {
           <p className="text-gray-600">Gestiona tus conversaciones sobre propiedades</p>
         </div>
 
-        <Tabs defaultValue="inbox" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="inbox" className="flex items-center">
               <Inbox className="h-4 w-4 mr-2" />

@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { Menu, User, LogOut } from "lucide-react";
+import { Menu, User, LogOut, MessageSquare, Inbox, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,6 +65,30 @@ const Navbar = () => {
     navigate('/profile');
   };
 
+  const handleMessages = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    navigate('/messages');
+  };
+
+  const handleInbox = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    navigate('/messages?tab=inbox');
+  };
+
+  const handleSentMessages = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    navigate('/messages?tab=sent');
+  };
+
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -93,6 +116,15 @@ const Navbar = () => {
                 >
                   {t('nav.listProperty')}
                 </button>
+                {user && (
+                  <button 
+                    onClick={handleMessages}
+                    className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors flex items-center"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    Mensajes
+                  </button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors">
@@ -164,6 +196,14 @@ const Navbar = () => {
                   <DropdownMenuItem onClick={handleProfile} className="flex items-center space-x-2">
                     <User className="h-4 w-4" />
                     <span>Mi Perfil</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleInbox} className="flex items-center space-x-2">
+                    <Inbox className="h-4 w-4" />
+                    <span>Bandeja de Entrada</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSentMessages} className="flex items-center space-x-2">
+                    <Send className="h-4 w-4" />
+                    <span>Mensajes Enviados</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="flex items-center space-x-2">
                     <LogOut className="h-4 w-4" />

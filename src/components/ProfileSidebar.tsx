@@ -1,5 +1,6 @@
 
 import { Home, Heart, Search, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ProfileSidebarProps {
   activeSection: string;
@@ -7,11 +8,17 @@ interface ProfileSidebarProps {
 }
 
 const ProfileSidebar = ({ activeSection, onSectionChange }: ProfileSidebarProps) => {
+  const navigate = useNavigate();
+
+  const handleMessagesClick = () => {
+    navigate('/messages');
+  };
+
   const sidebarItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "favourites", label: "Favourites", icon: Heart },
-    { id: "saved-searches", label: "Saved Searches", icon: Search },
-    { id: "messages", label: "Messages", icon: MessageSquare },
+    { id: "dashboard", label: "Dashboard", icon: Home, action: () => onSectionChange("dashboard") },
+    { id: "favourites", label: "Favourites", icon: Heart, action: () => onSectionChange("favourites") },
+    { id: "saved-searches", label: "Saved Searches", icon: Search, action: () => onSectionChange("saved-searches") },
+    { id: "messages", label: "Messages", icon: MessageSquare, action: handleMessagesClick },
   ];
 
   return (
@@ -19,12 +26,13 @@ const ProfileSidebar = ({ activeSection, onSectionChange }: ProfileSidebarProps)
       <nav className="space-y-2">
         {sidebarItems.map((item) => {
           const Icon = item.icon;
+          const isActive = activeSection === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => onSectionChange(item.id)}
+              onClick={item.action}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                activeSection === item.id
+                isActive
                   ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600"
                   : "text-gray-700 hover:bg-gray-50"
               }`}
