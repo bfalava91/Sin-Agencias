@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +18,9 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'tenant' | 'landlord'>('tenant');
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
+  const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false);
   
   const { signIn, signUp, user, loading } = useAuth();
   const { toast } = useToast();
@@ -145,6 +149,42 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsForgotPasswordLoading(true);
+
+    if (!forgotPasswordEmail) {
+      toast({
+        title: "Email requerido",
+        description: "Por favor, ingresa tu email.",
+        variant: "destructive",
+      });
+      setIsForgotPasswordLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el email de recuperación. Verifica tu dirección de correo.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Email enviado",
+        description: "Revisa tu email para restablecer tu contraseña.",
+      });
+      setShowForgotPasswordDialog(false);
+      setForgotPasswordEmail('');
+    }
+
+    setIsForgotPasswordLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
@@ -194,6 +234,56 @@ const Auth = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                   </Button>
+                  
+                  <div className="text-center">
+                    <Dialog open={showForgotPasswordDialog} onOpenChange={setShowForgotPasswordDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="link" className="text-sm text-blue-600 hover:text-blue-800">
+                          ¿Olvidaste tu contraseña?
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Recuperar contraseña</DialogTitle>
+                          <DialogDescription>
+                            Ingresa tu email para recibir un enlace de recuperación de contraseña.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleForgotPassword} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="forgot-email">Email</Label>
+                            <Input
+                              id="forgot-email"
+                              type="email"
+                              value={forgotPasswordEmail}
+                              onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                              placeholder="tu@email.com"
+                              required
+                              disabled={isForgotPasswordLoading}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setShowForgotPasswordDialog(false)}
+                              className="flex-1"
+                              disabled={isForgotPasswordLoading}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              type="submit"
+                              className="flex-1"
+                              disabled={isForgotPasswordLoading}
+                            >
+                              {isForgotPasswordLoading ? 'Enviando...' : 'Enviar'}
+                            </Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </form>
               </TabsContent>
 
