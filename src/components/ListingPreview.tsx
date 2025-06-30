@@ -88,10 +88,28 @@ const ListingPreview = ({ formData, onBack, onPublish, isLoading }: ListingPrevi
 
       {/* Main Listing Card */}
       <Card className="mb-6">
-        <div className="relative h-64 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
-          <p className="text-white text-lg font-medium">
-            Imagen de la propiedad (Próximamente)
-          </p>
+        {/* Image Section */}
+        <div className="relative h-64 rounded-t-lg overflow-hidden">
+          {formData.images && formData.images.length > 0 ? (
+            <div className="w-full h-full">
+              <img
+                src={formData.images[0]}
+                alt="Imagen principal de la propiedad"
+                className="w-full h-full object-cover"
+              />
+              {formData.images.length > 1 && (
+                <div className="absolute bottom-4 right-4 bg-black bg-opacity-75 text-white px-3 py-1 rounded-full text-sm">
+                  +{formData.images.length - 1} más
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center h-full">
+              <p className="text-white text-lg font-medium">
+                Sin imágenes subidas
+              </p>
+            </div>
+          )}
         </div>
         
         <CardContent className="p-6">
@@ -120,6 +138,31 @@ const ListingPreview = ({ formData, onBack, onPublish, isLoading }: ListingPrevi
               )}
             </div>
           </div>
+
+          {/* Additional Images Grid */}
+          {formData.images && formData.images.length > 1 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Galería de Imágenes</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {formData.images.slice(1, 5).map((image, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={image}
+                      alt={`Imagen ${index + 2} de la propiedad`}
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                  </div>
+                ))}
+                {formData.images.length > 5 && (
+                  <div className="flex items-center justify-center bg-gray-100 rounded-lg h-24">
+                    <span className="text-gray-600 text-sm font-medium">
+                      +{formData.images.length - 5} más
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {formData.bedrooms && (
@@ -251,14 +294,6 @@ const ListingPreview = ({ formData, onBack, onPublish, isLoading }: ListingPrevi
                   <X className="h-4 w-4 text-red-500" />
                 )}
                 <span className="text-sm">Fumadores</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                {formData.dssAccepted ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <X className="h-4 w-4 text-red-500" />
-                )}
-                <span className="text-sm">DSS</span>
               </div>
               {formData.studentsOnly && (
                 <div className="flex items-center space-x-2">
