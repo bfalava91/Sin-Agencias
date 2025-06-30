@@ -63,7 +63,7 @@ const Search = () => {
         console.log('Listing images type:', typeof listing.images);
         console.log('Listing images:', listing.images);
         
-        // Safely handle images array - ensure it's always an array
+        // Enhanced image safety - always ensure it's an array, never null
         const safeImages = Array.isArray(listing.images) ? [...listing.images] : [];
         
         // Create a clean copy of the original listing without circular references
@@ -107,7 +107,7 @@ const Search = () => {
           created_at: listing.created_at,
           updated_at: listing.updated_at,
           features: listing.features,
-          images: safeImages // Use the safe copy
+          images: safeImages // Always use the safe array copy
         };
         
         const transformed = {
@@ -118,7 +118,7 @@ const Search = () => {
           bedrooms: listing.bedrooms || 1,
           bathrooms: listing.bathrooms || 1,
           area: 70,
-          images: safeImages, // Use the safe copy here too
+          images: safeImages, // Always use the safe array copy
           featured: false,
           available: "Disponible Ahora",
           type: listing.property_type || 'flat',

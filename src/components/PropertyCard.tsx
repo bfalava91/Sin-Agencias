@@ -22,7 +22,7 @@ interface Property {
   move_in_date?: string;
   features?: string;
   square_meters?: number;
-  images?: string[];
+  images?: string[] | null;
   original?: any;
 }
 
@@ -36,19 +36,19 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Get images from the property data - check both direct property and original data
+  // Enhanced image handling with multiple fallback strategies
   const getDisplayImage = () => {
     // First check if property has images directly
-    if (property.images && property.images.length > 0) {
+    if (property.images && Array.isArray(property.images) && property.images.length > 0) {
       return property.images[0];
     }
     
     // Then check if original data has images
-    if (property.original?.images && property.original.images.length > 0) {
+    if (property.original?.images && Array.isArray(property.original.images) && property.original.images.length > 0) {
       return property.original.images[0];
     }
     
-    // Fallback to placeholder
+    // Fallback to placeholder - always return a valid image URL
     return "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
   };
 
@@ -123,6 +123,10 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           src={displayImage}
           alt={getTitle()}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            // Additional fallback in case the image fails to load
+            e.currentTarget.src = "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
+          }}
         />
         <button 
           onClick={handleLike}

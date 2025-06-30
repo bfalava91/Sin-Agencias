@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -90,13 +89,23 @@ export const useListings = () => {
         });
         return { success: false, error: "Insufficient features" };
       }
+
+      // Validate images for publishing - must have at least one image
+      if (!formData.images || formData.images.length === 0) {
+        toast({
+          title: "Imágenes requeridas",
+          description: "Debes subir al menos una imagen para publicar el anuncio",
+          variant: "destructive",
+        });
+        return { success: false, error: "No images provided" };
+      }
     }
 
     setIsLoading(true);
 
     try {
-      // Ensure images is always an array, never null
-      const imageUrls = Array.isArray(formData.images) ? formData.images : [];
+      // Ensure images is always an array, never null - strict enforcement
+      const imageUrls = Array.isArray(formData.images) ? [...formData.images] : [];
       
       const listingData = {
         user_id: user.id,
@@ -133,7 +142,7 @@ export const useListings = () => {
         remote_viewings: formData.remoteViewings,
         youtube_url: formData.youtubeUrl || null,
         features: formData.features || null,
-        images: imageUrls, // This ensures it's always an array
+        images: imageUrls, // Always an array, never null
         status: publish ? 'active' : 'draft'
       };
 
@@ -226,13 +235,23 @@ export const useListings = () => {
         });
         return { success: false, error: "Insufficient features" };
       }
+
+      // Validate images for publishing - must have at least one image
+      if (!formData.images || formData.images.length === 0) {
+        toast({
+          title: "Imágenes requeridas",
+          description: "Debes subir al menos una imagen para publicar el anuncio",
+          variant: "destructive",
+        });
+        return { success: false, error: "No images provided" };
+      }
     }
 
     setIsLoading(true);
 
     try {
-      // Ensure images is always an array, never null
-      const imageUrls = Array.isArray(formData.images) ? formData.images : [];
+      // Ensure images is always an array, never null - strict enforcement
+      const imageUrls = Array.isArray(formData.images) ? [...formData.images] : [];
       
       const listingData = {
         is_readvertising: formData.isReadvertising,
@@ -268,7 +287,7 @@ export const useListings = () => {
         remote_viewings: formData.remoteViewings,
         youtube_url: formData.youtubeUrl || null,
         features: formData.features || null,
-        images: imageUrls, // This ensures it's always an array
+        images: imageUrls, // Always an array, never null
         status: publish ? 'active' : 'draft',
         updated_at: new Date().toISOString()
       };
@@ -388,4 +407,3 @@ export const useListings = () => {
     isLoading
   };
 };
-

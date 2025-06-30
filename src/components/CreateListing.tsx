@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useListings, ListingFormData } from "@/hooks/useListings";
 import ListingPreview from "./ListingPreview";
 import ImageUpload from "./ImageUpload";
+import { useToast } from "@/hooks/use-toast";
 
 interface CreateListingProps {
   onBack: () => void;
@@ -20,6 +21,7 @@ interface CreateListingProps {
 const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
   const { user } = useAuth();
   const { createListing, updateListing, checkUserHasListings, isLoading } = useListings();
+  const { toast } = useToast();
   const [hasExistingListings, setHasExistingListings] = useState(false);
   const [showReadvertisingQuestion, setShowReadvertisingQuestion] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -57,7 +59,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     remoteViewings: false,
     youtubeUrl: "",
     features: "",
-    images: [], // Ensure this is always an empty array, not null
+    images: [], // Always initialize as empty array, never null
     agreedToTerms: false
   });
 
@@ -108,7 +110,8 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
         remoteViewings: editingListing.remote_viewings || false,
         youtubeUrl: editingListing.youtube_url || "",
         features: editingListing.features || "",
-        images: editingListing.images || [],
+        // Ensure images is always an array, never null
+        images: Array.isArray(editingListing.images) ? editingListing.images : [],
         agreedToTerms: true // Already agreed when creating
       });
 
@@ -140,12 +143,14 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Updated images handler with proper state update pattern
+  // Enhanced images handler with strict array enforcement
   const handleImagesChange = (newImages: string[]) => {
     console.log('HandleImagesChange called with:', newImages);
+    // Ensure we always have an array, never null or undefined
+    const safeImages = Array.isArray(newImages) ? newImages : [];
     setFormData(prev => ({ 
       ...prev, 
-      images: newImages // This ensures images is always an array, never null
+      images: safeImages
     }));
   };
 
@@ -158,27 +163,58 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     setFormData(prev => ({ ...prev, features: featuresArray.join('\n') }));
   };
 
+  const validateForPublishing = () => {
+    // Check if images array is empty
+    if (!formData.images || formData.images.length === 0) {
+      toast({
+        title: "Imágenes requeridas",
+        description: "Debes subir al menos una imagen antes de publicar el anuncio",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent, publish = false) => {
     e.preventDefault();
     
     if (!user) return;
 
-    if (publish && !formData.agreedToTerms) {
-      console.log('Must agree to terms to publish');
-      return;
+    // Validate for publishing
+    if (publish) {
+      if (!formData.agreedToTerms && !editingListing) {
+        toast({
+          title: "Términos y condiciones",
+          description: "Debes aceptar los términos y condiciones para publicar",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!validateForPublishing()) {
+        return;
+      }
     }
 
+    // Ensure images is always an array before submission
+    const safeFormData = {
+      ...formData,
+      images: Array.isArray(formData.images) ? formData.images : []
+    };
+
     // Debug logging before submission
-    console.log('Form submission - formData.images:', formData.images);
-    console.log('Form submission - formData.images length:', formData.images.length);
-    console.log('Form submission - formData.images type:', typeof formData.images);
-    console.log('Submitting form with data:', formData);
+    console.log('Form submission - safeFormData.images:', safeFormData.images);
+    console.log('Form submission - safeFormData.images length:', safeFormData.images.length);
+    console.log('Form submission - safeFormData.images type:', typeof safeFormData.images);
+    console.log('Submitting form with data:', safeFormData);
     
     let result;
     if (editingListing) {
-      result = await updateListing(editingListing.id, formData, publish);
+      result = await updateListing(editingListing.id, safeFormData, publish);
     } else {
-      result = await createListing(formData, publish);
+      result = await createListing(safeFormData, publish);
     }
     
     if (result.success) {
@@ -668,9 +704,17 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
         {/* Photos & Videos */}
         <Card>
           <CardHeader>
-            <CardTitle>Fotos y Videos</CardTitle>
+            <CardTitle>Fotos y Videos *</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="text-red-500">*</span> Debes subir al menos una imagen para publicar el anuncio
+              </p>
+              <p className="text-sm text-gray-500">
+                Imágenes actuales: {formData.images.length}
+              </p>
+            </div>
             <ImageUpload
               images={formData.images}
               onImagesChange={handleImagesChange}
