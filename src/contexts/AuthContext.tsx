@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
   id: string;
+  user_id: string;
   email: string;
   full_name: string | null;
   role: 'tenant' | 'landlord' | null;
@@ -75,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -109,35 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error };
     }
 
-    // Create profile if user was created successfully
-    if (data.user && !error) {
-      const profileError = await createUserProfile(data.user.id, data.user.email!, fullName, role);
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-      }
-    }
+    // Profile creation is now handled automatically by the database trigger
+    // No need to manually create the profile here
     
     return { error };
-  };
-
-  const createUserProfile = async (userId: string, email: string, fullName: string, role: 'tenant' | 'landlord') => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: userId,
-            email: email,
-            full_name: fullName,
-            role: role
-          }
-        ]);
-
-      return error;
-    } catch (error) {
-      console.error('Error creating profile:', error);
-      return error;
-    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -174,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
