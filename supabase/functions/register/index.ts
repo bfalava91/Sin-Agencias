@@ -53,7 +53,7 @@ serve(async (req) => {
     const normalizedEmail = email.trim().toLowerCase()
     console.log('Register API - Normalized email:', normalizedEmail)
 
-    // Create user using admin API
+    // Create user using admin API - disable email confirmation for now
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
       password,
@@ -93,6 +93,30 @@ serve(async (req) => {
     }
 
     console.log('Register API - User created successfully:', data.user?.email)
+
+    // Create profile manually since the trigger might be failing
+    if (data.user) {
+      console.log('Register API - Creating profile for user:', data.user.id)
+      
+      const { data: profileData, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          user_id: data.user.id,
+          email: normalizedEmail,
+          full_name: fullName,
+          role: role
+        })
+        .select()
+        .single()
+
+      if (profileError) {
+        console.log('Register API - Profile creation error:', profileError)
+        // Don't fail the registration if profile creation fails
+        // The user is already created in auth.users
+      } else {
+        console.log('Register API - Profile created successfully:', profileData)
+      }
+    }
 
     return new Response(JSON.stringify({ 
       success: true,
