@@ -21,6 +21,8 @@ interface Property {
   status: string;
   move_in_date?: string;
   features?: string;
+  square_meters?: number;
+  original?: any;
 }
 
 interface PropertyCardProps {
@@ -53,10 +55,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
 
   const handleContact = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toast({
-      title: "Contactando propietario",
-      description: `Te pondremos en contacto para ${getTitle()}`,
-    });
+    navigate(`/message-landlord/${property.id}`);
   };
 
   const getTitle = () => {
@@ -65,7 +64,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
 
   const getLocation = () => {
     const parts = [property.neighborhood, property.town].filter(Boolean);
-    return parts.join(', ') || 'Ubicación no especificada';
+    return parts.length > 0 ? parts.join(', ') : null;
   };
 
   const getAvailabilityText = () => {
@@ -80,6 +79,26 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
     if (!property.features) return [];
     return property.features.split('\n').filter(feature => feature.trim() !== '').slice(0, 3);
   };
+
+  const getMonthlyRent = () => {
+    // Try to get monthly rent from the property itself or the original data
+    const monthlyRent = property.monthly_rent || property.original?.monthly_rent;
+    if (monthlyRent) return monthlyRent;
+    
+    // If no monthly rent, try to calculate from weekly rent
+    const weeklyRent = property.original?.weekly_rent;
+    if (weeklyRent) return weeklyRent * 4;
+    
+    return null;
+  };
+
+  const getSquareMeters = () => {
+    return property.square_meters || property.original?.square_meters;
+  };
+
+  const monthlyRent = getMonthlyRent();
+  const squareMeters = getSquareMeters();
+  const location = getLocation();
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden border-0 shadow-md cursor-pointer" onClick={handleViewDetails}>
@@ -109,15 +128,17 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
             {getTitle()}
           </h3>
-          <div className="flex items-center text-gray-600 text-sm">
-            <MapPin className="h-4 w-4 mr-1" />
-            {getLocation()}
-          </div>
+          {location && (
+            <div className="flex items-center text-gray-600 text-sm">
+              <MapPin className="h-4 w-4 mr-1" />
+              {location}
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between mb-4">
           <div className="text-2xl font-bold text-gray-900">
-            {property.monthly_rent ? `€${property.monthly_rent.toLocaleString()}` : 'Precio a consultar'}
+            {monthlyRent ? `€${monthlyRent.toLocaleString()}` : 'Precio a consultar'}
             <span className="text-sm font-normal text-gray-600">/mes</span>
           </div>
         </div>
@@ -135,13 +156,10 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               {property.bathrooms} {property.bathrooms > 1 ? 'baños' : 'baño'}
             </div>
           )}
-          {property.property_type && (
+          {squareMeters && (
             <div className="flex items-center">
               <Square className="h-4 w-4 mr-1" />
-              {property.property_type === 'flat' ? 'Piso' : 
-               property.property_type === 'studio' ? 'Estudio' : 
-               property.property_type === 'house' ? 'Casa' : 
-               property.property_type}
+              {squareMeters}m²
             </div>
           )}
         </div>
