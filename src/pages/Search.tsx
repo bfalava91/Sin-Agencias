@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -14,10 +13,29 @@ const Search = () => {
   const [allProperties, setAllProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
-    location: searchParams.get('location') || '',
+    postcode: searchParams.get('postcode') || '',
+    town: searchParams.get('town') || '',
+    neighborhood: searchParams.get('neighborhood') || '',
     property_type: searchParams.get('property_type') || 'any',
-    monthly_rent: [0, 200000], // Much more inclusive range
-    bedrooms: 'any'
+    monthly_rent: [0, 5000],
+    weekly_rent: [0, 1200],
+    bedrooms: [0, 10],
+    bathrooms: [0, 5],
+    furnishing: searchParams.get('furnishing') || 'any',
+    deposit: searchParams.get('deposit') || 'any',
+    min_tenancy: [0, 24],
+    max_tenants: [1, 10],
+    bills_included: null,
+    garden_access: null,
+    parking: null,
+    fireplace: null,
+    students_allowed: null,
+    families_allowed: null,
+    dss_accepted: null,
+    pets_allowed: null,
+    smokers_allowed: null,
+    students_only: null,
+    remote_viewings: null,
   });
   const { t } = useLanguage();
 
@@ -40,7 +58,6 @@ const Search = () => {
 
       console.log('Raw listings from database:', data);
 
-      // Transform database listings to match the expected format
       const transformedListings = data?.map(listing => {
         console.log('Transforming listing:', listing);
         
@@ -51,11 +68,13 @@ const Search = () => {
           price: listing.monthly_rent || (listing.weekly_rent ? listing.weekly_rent * 4 : 0),
           bedrooms: listing.bedrooms || 1,
           bathrooms: listing.bathrooms || 1,
-          area: 70, // Default area since it's not in our database
+          area: 70,
           image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
           featured: false,
           available: "Disponible Ahora",
-          type: listing.property_type || 'flat'
+          type: listing.property_type || 'flat',
+          // Store original listing data for filtering
+          original: listing
         };
         
         console.log('Transformed listing:', transformed);
@@ -72,112 +91,94 @@ const Search = () => {
     }
   };
 
-  const generateListingTitle = (listing) => {
-    const propertyType = getDisplayPropertyType(listing.property_type);
-    const bedrooms = listing.bedrooms ? `${listing.bedrooms} hab.` : '';
-    
-    // Build location string with preference: neighborhood > town > postcode
-    let location = '';
-    if (listing.neighborhood) {
-      location = listing.neighborhood;
-    } else if (listing.town) {
-      location = listing.town;
-    } else if (listing.postcode) {
-      location = listing.postcode;
-    }
-    
-    // Build the title
-    let title = propertyType;
-    if (bedrooms) {
-      title += ` ${bedrooms}`;
-    }
-    if (location) {
-      title += ` en ${location}`;
-    }
-    
-    return title;
-  };
-
-  const generateLocationText = (listing) => {
-    // Build a comprehensive location string
-    const parts = [];
-    
-    if (listing.neighborhood) {
-      parts.push(listing.neighborhood);
-    }
-    
-    if (listing.town) {
-      parts.push(listing.town);
-    }
-    
-    if (listing.postcode) {
-      parts.push(listing.postcode);
-    }
-    
-    return parts.join(', ') || 'Ubicación no especificada';
-  };
-
-  const getDisplayPropertyType = (dbType) => {
-    const displayMapping = {
-      'studio': 'Estudio',
-      'bedsit': 'Estudio',
-      'flat': 'Piso',
-      'penthouse': 'Ático',
-      'maisonette': 'Dúplex',
-      'detached': 'Casa Individual',
-      'semi-detached': 'Casa Adosada',
-      'terraced': 'Casa en Hilera',
-      'bungalow': 'Bungalow'
-    };
-    return displayMapping[dbType] || 'Propiedad';
-  };
-
   useEffect(() => {
     console.log('Applying filters:', filters);
     console.log('All properties before filtering:', allProperties);
     
     let filtered = [...allProperties];
 
-    // Filtrar por ubicación
-    if (filters.location) {
-      const locationFilter = filters.location.toLowerCase();
+    // Text-based filters
+    if (filters.postcode) {
       filtered = filtered.filter(property => 
-        property.location.toLowerCase().includes(locationFilter) ||
-        property.title.toLowerCase().includes(locationFilter)
+        property.original.postcode?.toLowerCase().includes(filters.postcode.toLowerCase())
       );
-      console.log('After location filter:', filtered);
     }
 
-    // Filtrar por tipo de propiedad
+    if (filters.town) {
+      filtered = filtered.filter(property => 
+        property.original.town?.toLowerCase().includes(filters.town.toLowerCase())
+      );
+    }
+
+    if (filters.neighborhood) {
+      filtered = filtered.filter(property => 
+        property.original.neighborhood?.toLowerCase().includes(filters.neighborhood.toLowerCase())
+      );
+    }
+
     if (filters.property_type !== 'any') {
-      filtered = filtered.filter(property => {
-        console.log(`Comparing property type: ${property.type} with filter: ${filters.property_type}`);
-        return property.type === filters.property_type;
-      });
-      console.log('After property type filter:', filtered);
+      filtered = filtered.filter(property => 
+        property.original.property_type === filters.property_type
+      );
     }
 
-    // Filtrar por rango de precio
+    if (filters.furnishing !== 'any') {
+      filtered = filtered.filter(property => 
+        property.original.furnishing === filters.furnishing
+      );
+    }
+
+    if (filters.deposit !== 'any') {
+      filtered = filtered.filter(property => 
+        property.original.deposit === filters.deposit
+      );
+    }
+
+    // Range filters
     filtered = filtered.filter(property => {
-      const priceInRange = property.price >= filters.monthly_rent[0] && property.price <= filters.monthly_rent[1];
-      console.log(`Price ${property.price} in range [${filters.monthly_rent[0]}, ${filters.monthly_rent[1]}]: ${priceInRange}`);
-      return priceInRange;
+      const monthlyRent = property.original.monthly_rent || 0;
+      return monthlyRent >= filters.monthly_rent[0] && monthlyRent <= filters.monthly_rent[1];
     });
-    console.log('After price filter:', filtered);
 
-    // Filtrar por habitaciones
-    if (filters.bedrooms !== 'any') {
-      const bedroomCount = typeof filters.bedrooms === 'string' && filters.bedrooms.includes('+') 
-        ? parseInt(filters.bedrooms) 
-        : parseInt(filters.bedrooms);
-      
-      if (filters.bedrooms.includes('+')) {
-        filtered = filtered.filter(property => property.bedrooms >= bedroomCount);
-      } else {
-        filtered = filtered.filter(property => property.bedrooms === bedroomCount);
+    filtered = filtered.filter(property => {
+      const weeklyRent = property.original.weekly_rent || 0;
+      return weeklyRent >= filters.weekly_rent[0] && weeklyRent <= filters.weekly_rent[1];
+    });
+
+    filtered = filtered.filter(property => {
+      const bedrooms = property.original.bedrooms || 0;
+      return bedrooms >= filters.bedrooms[0] && bedrooms <= filters.bedrooms[1];
+    });
+
+    filtered = filtered.filter(property => {
+      const bathrooms = property.original.bathrooms || 0;
+      return bathrooms >= filters.bathrooms[0] && bathrooms <= filters.bathrooms[1];
+    });
+
+    filtered = filtered.filter(property => {
+      const minTenancy = property.original.min_tenancy || 0;
+      return minTenancy >= filters.min_tenancy[0] && minTenancy <= filters.min_tenancy[1];
+    });
+
+    filtered = filtered.filter(property => {
+      const maxTenants = property.original.max_tenants || 1;
+      return maxTenants >= filters.max_tenants[0] && maxTenants <= filters.max_tenants[1];
+    });
+
+    // Boolean filters
+    const booleanFilters = [
+      'bills_included', 'garden_access', 'parking', 'fireplace',
+      'students_allowed', 'families_allowed', 'dss_accepted', 
+      'pets_allowed', 'smokers_allowed', 'students_only', 'remote_viewings'
+    ];
+
+    booleanFilters.forEach(filterKey => {
+      if (filters[filterKey as keyof typeof filters] === true) {
+        filtered = filtered.filter(property => 
+          property.original[filterKey] === true
+        );
       }
-      console.log('After bedrooms filter:', filtered);
-    }
+    });
 
     console.log('Final filtered properties:', filtered);
     setFilteredProperties(filtered);
@@ -237,6 +238,63 @@ const Search = () => {
       <Footer />
     </div>
   );
+};
+
+const generateListingTitle = (listing) => {
+  const propertyType = getDisplayPropertyType(listing.property_type);
+  const bedrooms = listing.bedrooms ? `${listing.bedrooms} hab.` : '';
+  
+  let location = '';
+  if (listing.neighborhood) {
+    location = listing.neighborhood;
+  } else if (listing.town) {
+    location = listing.town;
+  } else if (listing.postcode) {
+    location = listing.postcode;
+  }
+  
+  let title = propertyType;
+  if (bedrooms) {
+    title += ` ${bedrooms}`;
+  }
+  if (location) {
+    title += ` en ${location}`;
+  }
+  
+  return title;
+};
+
+const generateLocationText = (listing) => {
+  const parts = [];
+  
+  if (listing.neighborhood) {
+    parts.push(listing.neighborhood);
+  }
+  
+  if (listing.town) {
+    parts.push(listing.town);
+  }
+  
+  if (listing.postcode) {
+    parts.push(listing.postcode);
+  }
+  
+  return parts.join(', ') || 'Ubicación no especificada';
+};
+
+const getDisplayPropertyType = (dbType) => {
+  const displayMapping = {
+    'studio': 'Estudio',
+    'bedsit': 'Estudio',
+    'flat': 'Piso',
+    'penthouse': 'Ático',
+    'maisonette': 'Dúplex',
+    'detached': 'Casa Individual',
+    'semi-detached': 'Casa Adosada',
+    'terraced': 'Casa en Hilera',
+    'bungalow': 'Bungalow'
+  };
+  return displayMapping[dbType] || 'Propiedad';
 };
 
 export default Search;
