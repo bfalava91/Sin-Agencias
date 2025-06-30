@@ -41,6 +41,7 @@ export type Database = {
           property_type: string | null
           remote_viewings: boolean | null
           smokers_allowed: boolean | null
+          square_meters: number | null
           status: string | null
           students_allowed: boolean | null
           students_only: boolean | null
@@ -81,6 +82,7 @@ export type Database = {
           property_type?: string | null
           remote_viewings?: boolean | null
           smokers_allowed?: boolean | null
+          square_meters?: number | null
           status?: string | null
           students_allowed?: boolean | null
           students_only?: boolean | null
@@ -121,6 +123,7 @@ export type Database = {
           property_type?: string | null
           remote_viewings?: boolean | null
           smokers_allowed?: boolean | null
+          square_meters?: number | null
           status?: string | null
           students_allowed?: boolean | null
           students_only?: boolean | null

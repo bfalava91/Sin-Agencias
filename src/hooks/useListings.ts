@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +15,7 @@ export interface ListingFormData {
   propertyType: string;
   bedrooms: string;
   bathrooms: string;
+  squareMeters: string;
   furnishing: string;
   description: string;
   monthlyRent: string;
@@ -96,6 +96,7 @@ export const useListings = () => {
         property_type: formData.propertyType || null,
         bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
         bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
+        square_meters: formData.squareMeters ? parseInt(formData.squareMeters) : null,
         furnishing: formData.furnishing || null,
         description: formData.description || null,
         monthly_rent: formData.monthlyRent ? parseFloat(formData.monthlyRent) : null,
@@ -206,6 +207,7 @@ export const useListings = () => {
         property_type: formData.propertyType || null,
         bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
         bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
+        square_meters: formData.squareMeters ? parseInt(formData.squareMeters) : null,
         furnishing: formData.furnishing || null,
         description: formData.description || null,
         monthly_rent: formData.monthlyRent ? parseFloat(formData.monthlyRent) : null,

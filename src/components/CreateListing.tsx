@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +34,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     propertyType: "",
     bedrooms: "",
     bathrooms: "",
+    squareMeters: "",
     furnishing: "",
     description: "",
     monthlyRent: "",
@@ -85,6 +85,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
         propertyType: editingListing.property_type || "",
         bedrooms: editingListing.bedrooms ? editingListing.bedrooms.toString() : "",
         bathrooms: editingListing.bathrooms ? editingListing.bathrooms.toString() : "",
+        squareMeters: editingListing.square_meters ? editingListing.square_meters.toString() : "",
         furnishing: editingListing.furnishing || "",
         description: editingListing.description || "",
         monthlyRent: editingListing.monthly_rent ? editingListing.monthly_rent.toString() : "",
@@ -382,7 +383,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Label>Número de Dormitorios *</Label>
                 <Select 
@@ -417,6 +418,18 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="squareMeters">Metros Cuadrados</Label>
+                <Input
+                  id="squareMeters"
+                  type="number"
+                  value={formData.squareMeters}
+                  onChange={(e) => handleInputChange("squareMeters", e.target.value)}
+                  placeholder="80"
+                  disabled={isLoading}
+                />
               </div>
               
               <div>

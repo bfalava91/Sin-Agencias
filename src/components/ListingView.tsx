@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Bed, Bath, Car, Flame, Users, Check, X, Edit } from "lucide-react";
+import { ArrowLeft, MapPin, Bed, Bath, Car, Flame, Users, Check, X, Edit, Home } from "lucide-react";
 
 interface ListingViewProps {
   listing: any;
@@ -140,7 +139,7 @@ const ListingView = ({ listing, onBack, onEdit }: ListingViewProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             {listing.bedrooms && (
               <div className="flex items-center space-x-2">
                 <Bed className="h-5 w-5 text-gray-500" />
@@ -151,6 +150,12 @@ const ListingView = ({ listing, onBack, onEdit }: ListingViewProps) => {
               <div className="flex items-center space-x-2">
                 <Bath className="h-5 w-5 text-gray-500" />
                 <span>{listing.bathrooms} baño{listing.bathrooms > 1 ? 's' : ''}</span>
+              </div>
+            )}
+            {listing.square_meters && (
+              <div className="flex items-center space-x-2">
+                <Home className="h-5 w-5 text-gray-500" />
+                <span>{listing.square_meters} m²</span>
               </div>
             )}
             {listing.parking && (
@@ -202,6 +207,12 @@ const ListingView = ({ listing, onBack, onEdit }: ListingViewProps) => {
                 <span className="text-sm text-gray-500">Amueblado</span>
                 <div className="font-medium">{getFurnishingLabel(listing.furnishing)}</div>
               </div>
+              {listing.square_meters && (
+                <div>
+                  <span className="text-sm text-gray-500">Superficie</span>
+                  <div className="font-medium">{listing.square_meters} m²</div>
+                </div>
+              )}
               {listing.min_tenancy && (
                 <div>
                   <span className="text-sm text-gray-500">Duración Mínima</span>
