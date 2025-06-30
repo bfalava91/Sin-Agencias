@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -84,7 +85,7 @@ const Auth = () => {
       return;
     }
 
-    // Check if passwords match
+    // Check if passwords match BEFORE submitting
     if (password !== confirmPassword) {
       toast({
         title: "Error en contraseñas",
@@ -106,13 +107,14 @@ const Auth = () => {
       return;
     }
 
+    console.log('Frontend - Submitting registration form');
     const { error } = await signUp(email, password, fullName, role);
 
     if (error) {
       if (error.message === 'User already registered') {
         toast({
           title: "Usuario ya registrado",
-          description: error.details || "Este email ya está registrado. Intenta iniciar sesión.",
+          description: error.details || "Ya existe un usuario con este correo.",
           variant: "destructive",
         });
       } else {
@@ -125,7 +127,7 @@ const Auth = () => {
     } else {
       toast({
         title: "¡Registro exitoso!",
-        description: "Revisa tu email para verificar tu cuenta.",
+        description: "Tu cuenta ha sido creada correctamente. Redirigiendo al perfil...",
       });
       // Clear form
       setEmail('');
@@ -133,6 +135,11 @@ const Auth = () => {
       setConfirmPassword('');
       setFullName('');
       setRole('tenant');
+      
+      // Redirect to profile page after successful registration
+      setTimeout(() => {
+        navigate('/profile');
+      }, 1000);
     }
 
     setIsLoading(false);

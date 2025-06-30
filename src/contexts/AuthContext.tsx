@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -91,95 +92,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const checkExistingUser = async (email: string) => {
-    try {
-      // Normalize email to avoid false negatives
-      const normalizedEmail = email.trim().toLowerCase();
-      console.log('Checking if user exists for normalized email:', normalizedEmail);
-      
-      // Attempt to sign in with a dummy password to check if user exists
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password: 'dummy-password-that-will-never-match-123456789'
-      });
-      
-      console.log('Dummy sign-in response - data:', data);
-      console.log('Dummy sign-in response - error:', error);
-      
-      // If we get a valid session (user exists and dummy password somehow matched)
-      if (data?.session && data?.user) {
-        console.log('Valid session returned - user exists');
-        // Sign out immediately to clean up the accidental login
-        await supabase.auth.signOut();
-        return true;
-      }
-      
-      // If error is "Invalid login credentials", user doesn't exist
-      if (error && error.message === 'Invalid login credentials') {
-        console.log('Invalid login credentials error - user does not exist, safe to sign up');
-        return false;
-      }
-      
-      // If we get any other error, assume user exists to be safe
-      console.log('Other error or unexpected response - assuming user exists to be safe');
-      return true;
-      
-    } catch (error) {
-      console.error('Unexpected error checking if user exists:', error);
-      // If we can't determine, assume user exists to prevent duplicate signups
-      return true;
-    }
-  };
-
   const signUp = async (email: string, password: string, fullName: string, role: 'tenant' | 'landlord') => {
     try {
-      console.log('Starting signup process for:', email);
+      console.log('Frontend - Starting signup process for:', email);
       
-      // First check if user already exists using dummy password attempt
-      const userExists = await checkExistingUser(email);
-      
-      if (userExists) {
-        console.log('User already exists, blocking signup');
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          role
+        })
+      });
+
+      const result = await response.json();
+      console.log('Frontend - Register API response status:', response.status);
+      console.log('Frontend - Register API response data:', result);
+
+      if (response.status === 409) {
+        console.log('Frontend - Email already registered');
         return { 
           error: { 
             message: 'User already registered',
-            details: 'Este email ya está registrado. Intenta iniciar sesión.' 
+            details: result.message || 'Ya existe un usuario con este correo.'
           } 
         };
       }
 
-      console.log('User does not exist, proceeding with signup');
-      
-      // Normalize email for signup as well
-      const normalizedEmail = email.trim().toLowerCase();
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName,
-            role: role
-          }
-        }
-      });
-      
-      console.log('Supabase signUp response - data:', data);
-      console.log('Supabase signUp response - error:', error);
-      
-      if (error) {
-        console.error('Sign up error:', error);
-        return { error };
+      if (!response.ok) {
+        console.log('Frontend - Registration failed with status:', response.status);
+        return { 
+          error: { 
+            message: result.error || 'Registration failed' 
+          } 
+        };
       }
 
-      console.log('Signup successful:', data);
+      console.log('Frontend - Registration successful');
       return { error: null };
       
     } catch (error) {
-      console.error('Unexpected error during signup:', error);
-      return { error };
+      console.error('Frontend - Unexpected error during signup:', error);
+      return { error: { message: 'Network error or server unavailable' } };
     }
   };
 
