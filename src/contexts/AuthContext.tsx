@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,38 +95,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Frontend - Starting signup process for:', email);
       
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Call the Supabase edge function directly
+      const { data, error } = await supabase.functions.invoke('register', {
+        body: {
           email,
           password,
           fullName,
           role
-        })
+        }
       });
 
-      const result = await response.json();
-      console.log('Frontend - Register API response status:', response.status);
-      console.log('Frontend - Register API response data:', result);
+      console.log('Frontend - Register function response:', data);
+      console.log('Frontend - Register function error:', error);
 
-      if (response.status === 409) {
-        console.log('Frontend - Email already registered');
+      if (error) {
+        console.log('Frontend - Registration failed with error:', error);
         return { 
           error: { 
-            message: 'User already registered',
-            details: result.message || 'Ya existe un usuario con este correo.'
+            message: error.message || 'Registration failed' 
           } 
         };
       }
 
-      if (!response.ok) {
-        console.log('Frontend - Registration failed with status:', response.status);
+      if (data?.error) {
+        console.log('Frontend - Registration failed with data error:', data.error);
+        
+        if (data.error === 'Email already registered') {
+          return { 
+            error: { 
+              message: 'User already registered',
+              details: data.message || 'Ya existe un usuario con este correo.'
+            } 
+          };
+        }
+        
         return { 
           error: { 
-            message: result.error || 'Registration failed' 
+            message: data.error || 'Registration failed' 
           } 
         };
       }
