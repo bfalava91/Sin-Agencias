@@ -3,12 +3,23 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  role: 'tenant' | 'landlord' | null;
+  phone: string | null;
+  created_at: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: Profile | null;
   signUp: (email: string, password: string, fullName: string, role: 'tenant' | 'landlord') => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
   loading: boolean;
 }
 
@@ -17,6 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +38,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Fetch profile when user logs in
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+        
         setLoading(false);
       }
     );
@@ -35,16 +57,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
+      
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
   const signUp = async (email: string, password: string, fullName: string, role: 'tenant' | 'landlord') => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -58,9 +104,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (error) {
       console.error('Sign up error:', error);
+      return { error };
+    }
+
+    // Create profile if user was created successfully
+    if (data.user && !error) {
+      const profileError = await createUserProfile(data.user.id, fullName, role);
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+      }
     }
     
     return { error };
+  };
+
+  const createUserProfile = async (userId: string, fullName: string, role: 'tenant' | 'landlord') => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            user_id: userId,
+            full_name: fullName,
+            role: role
+          }
+        ]);
+
+      return error;
+    } catch (error) {
+      console.error('Error creating profile:', error);
+      return error;
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -84,15 +158,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear the state immediately
       setSession(null);
       setUser(null);
+      setProfile(null);
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!user) {
+      return { error: { message: 'No authenticated user' } };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        return { error };
+      }
+
+      setProfile(data);
+      return { error: null };
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return { error };
     }
   };
 
   const value = {
     user,
     session,
+    profile,
     signUp,
     signIn,
     signOut,
+    updateProfile,
     loading,
   };
 

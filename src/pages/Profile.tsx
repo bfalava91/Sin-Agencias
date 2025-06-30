@@ -4,17 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  Home, 
-  Heart, 
-  Search, 
-  MessageSquare, 
   LogOut,
   User,
-  Settings,
-  Building2,
-  Plus
+  Edit2,
+  Save,
+  X
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -24,11 +23,16 @@ import CreateListing from "@/components/CreateListing";
 import ManageListings from "@/components/ManageListings";
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: profile?.full_name || '',
+    phone: profile?.phone || ''
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -37,6 +41,32 @@ const Profile = () => {
       description: "Has cerrado sesión correctamente.",
     });
     navigate('/');
+  };
+
+  const handleSaveProfile = async () => {
+    const { error } = await updateProfile(editForm);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el perfil. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Perfil actualizado",
+        description: "Los cambios se han guardado correctamente.",
+      });
+      setIsEditingProfile(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditForm({
+      full_name: profile?.full_name || '',
+      phone: profile?.phone || ''
+    });
+    setIsEditingProfile(false);
   };
 
   if (!user) {
@@ -52,6 +82,103 @@ const Profile = () => {
   ];
 
   const renderContent = () => {
+    if (activeTab === "account") {
+      return (
+        <div className="p-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Información del Perfil
+                {!isEditingProfile && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsEditingProfile(true)}
+                  >
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-4 mb-6">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src="/api/placeholder/80/80" />
+                  <AvatarFallback className="text-xl">
+                    {profile?.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-semibold">
+                    {profile?.full_name || 'Usuario'}
+                  </h3>
+                  <p className="text-gray-600">{user.email}</p>
+                  <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mt-1">
+                    {profile?.role === 'landlord' ? 'Propietario' : 'Inquilino'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="full_name">Nombre Completo</Label>
+                  {isEditingProfile ? (
+                    <Input
+                      id="full_name"
+                      value={editForm.full_name}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                    />
+                  ) : (
+                    <p className="text-gray-900 font-medium">{profile?.full_name || 'No especificado'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <p className="text-gray-900 font-medium">{user.email}</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="phone">Teléfono</Label>
+                  {isEditingProfile ? (
+                    <Input
+                      id="phone"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Número de teléfono"
+                    />
+                  ) : (
+                    <p className="text-gray-900 font-medium">{profile?.phone || 'No especificado'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="role">Tipo de Usuario</Label>
+                  <p className="text-gray-900 font-medium">
+                    {profile?.role === 'landlord' ? 'Propietario' : 'Inquilino'}
+                  </p>
+                </div>
+              </div>
+
+              {isEditingProfile && (
+                <div className="flex space-x-2 pt-4">
+                  <Button onClick={handleSaveProfile}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Guardar Cambios
+                  </Button>
+                  <Button variant="outline" onClick={handleCancelEdit}>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
     if (activeTab === "dashboard") {
       if (activeSection === "create-listing") {
         return <CreateListing onBack={() => setActiveSection("dashboard")} />;
@@ -90,12 +217,12 @@ const Profile = () => {
               <Avatar className="h-12 w-12">
                 <AvatarImage src="/api/placeholder/48/48" />
                 <AvatarFallback>
-                  {user.email?.charAt(0).toUpperCase()}
+                  {profile?.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <h1 className="text-xl font-semibold">Mi Perfil</h1>
-                <p className="text-gray-600">{user.email}</p>
+                <p className="text-gray-600">{profile?.full_name || user.email}</p>
               </div>
             </div>
             <Button 

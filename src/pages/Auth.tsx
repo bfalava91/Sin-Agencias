@@ -24,7 +24,7 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/profile');
     }
   }, [user, navigate]);
 
@@ -45,6 +45,7 @@ const Auth = () => {
         title: "¡Bienvenido!",
         description: "Has iniciado sesión correctamente.",
       });
+      navigate('/profile');
     }
 
     setIsLoading(false);
