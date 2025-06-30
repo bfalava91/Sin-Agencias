@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,27 +18,46 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'tenant' | 'landlord'>('tenant');
   
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
+    if (!loading && user) {
       navigate('/profile');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
+
+  // Don't render anything while loading or if user is authenticated
+  if (loading || user) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">Cargando...</div>
+    </div>;
+  }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    if (!email || !password) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor, completa todos los campos.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     const { error } = await signIn(email, password);
 
     if (error) {
       toast({
         title: "Error al iniciar sesión",
-        description: error.message,
+        description: error.message === 'Invalid login credentials' 
+          ? "Credenciales inválidas. Verifica tu email y contraseña."
+          : error.message,
         variant: "destructive",
       });
     } else {
@@ -47,7 +65,6 @@ const Auth = () => {
         title: "¡Bienvenido!",
         description: "Has iniciado sesión correctamente.",
       });
-      navigate('/profile');
     }
 
     setIsLoading(false);
@@ -56,6 +73,17 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    // Validate required fields
+    if (!email || !password || !confirmPassword || !fullName) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor, completa todos los campos.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
 
     // Check if passwords match
     if (password !== confirmPassword) {
@@ -68,13 +96,29 @@ const Auth = () => {
       return;
     }
 
+    // Check password length
+    if (password.length < 6) {
+      toast({
+        title: "Contraseña muy corta",
+        description: "La contraseña debe tener al menos 6 caracteres.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await signUp(email, password, fullName, role);
 
     if (error) {
-      // Check for specific error messages that indicate user already exists
-      if (error.message.includes('User already registered') || 
-          error.message.includes('already registered') ||
-          error.message.includes('already been registered')) {
+      if (error.message === 'User already registered') {
+        toast({
+          title: "Usuario ya registrado",
+          description: error.details || "Este email ya está registrado. Intenta iniciar sesión.",
+          variant: "destructive",
+        });
+      } else if (error.message.includes('User already registered') || 
+                 error.message.includes('already registered') ||
+                 error.message.includes('already been registered')) {
         toast({
           title: "Usuario ya registrado",
           description: "Este email ya está registrado. Intenta iniciar sesión.",
@@ -83,7 +127,7 @@ const Auth = () => {
       } else {
         toast({
           title: "Error al registrarse",
-          description: error.message,
+          description: error.message || "Ocurrió un error inesperado.",
           variant: "destructive",
         });
       }
@@ -92,6 +136,12 @@ const Auth = () => {
         title: "¡Registro exitoso!",
         description: "Revisa tu email para verificar tu cuenta.",
       });
+      // Clear form
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setFullName('');
+      setRole('tenant');
     }
 
     setIsLoading(false);
@@ -129,6 +179,7 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -139,6 +190,7 @@ const Auth = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
@@ -157,6 +209,7 @@ const Auth = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -167,6 +220,7 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -178,6 +232,7 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -189,11 +244,16 @@ const Auth = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       minLength={6}
+                      disabled={isLoading}
                     />
                   </div>
                   <div className="space-y-3">
                     <Label>Tipo de Usuario</Label>
-                    <RadioGroup value={role} onValueChange={(value) => setRole(value as 'tenant' | 'landlord')}>
+                    <RadioGroup 
+                      value={role} 
+                      onValueChange={(value) => setRole(value as 'tenant' | 'landlord')}
+                      disabled={isLoading}
+                    >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="tenant" id="tenant" />
                         <Label htmlFor="tenant">Inquilino - Busco propiedad</Label>

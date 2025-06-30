@@ -37,17 +37,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
         // Fetch profile when user logs in
-        if (session?.user) {
+        if (session?.user && event === 'SIGNED_IN') {
           setTimeout(() => {
             fetchUserProfile(session.user.id);
-          }, 0);
-        } else {
+          }, 100);
+        } else if (event === 'SIGNED_OUT') {
           setProfile(null);
         }
         
@@ -84,36 +84,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setProfile(data);
+      if (data) {
+        setProfile(data);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role: 'tenant' | 'landlord') => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-          role: role
-        }
+  const checkExistingUser = async (email: string) => {
+    try {
+      // Check if user exists in auth.users by attempting to sign in with a dummy password
+      // This is a workaround since we can't directly query auth.users
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'dummy-password-check-123456'
+      });
+      
+      // If error is "Invalid login credentials", user doesn't exist
+      // If error is something else, user might exist
+      if (error && error.message === 'Invalid login credentials') {
+        return false; // User doesn't exist
       }
-    });
-    
-    if (error) {
-      console.error('Sign up error:', error);
+      
+      // If we got here without an "Invalid login credentials" error, user likely exists
+      if (data.user || (error && error.message !== 'Invalid login credentials')) {
+        return true; // User exists
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking existing user:', error);
+      return false;
+    }
+  };
+
+  const signUp = async (email: string, password: string, fullName: string, role: 'tenant' | 'landlord') => {
+    try {
+      // First check if user already exists
+      const userExists = await checkExistingUser(email);
+      if (userExists) {
+        return { 
+          error: { 
+            message: 'User already registered',
+            details: 'Este email ya está registrado. Intenta iniciar sesión.' 
+          } 
+        };
+      }
+
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+            role: role
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('Sign up error:', error);
+        
+        // Handle specific Supabase errors
+        if (error.message.includes('User already registered') || 
+            error.message.includes('already registered') ||
+            error.message.includes('already been registered')) {
+          return { 
+            error: { 
+              message: 'User already registered',
+              details: 'Este email ya está registrado. Intenta iniciar sesión.' 
+            } 
+          };
+        }
+        
+        return { error };
+      }
+
+      // Profile creation is now handled automatically by the database trigger
+      return { error: null };
+    } catch (error) {
+      console.error('Unexpected error during signup:', error);
       return { error };
     }
-
-    // Profile creation is now handled automatically by the database trigger
-    // No need to manually create the profile here
-    
-    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
