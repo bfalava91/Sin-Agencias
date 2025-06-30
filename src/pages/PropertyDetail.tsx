@@ -1,9 +1,10 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   ArrowLeft, 
   Bed, 
@@ -26,7 +27,8 @@ import {
   Building,
   CreditCard,
   Calendar as CalendarIcon,
-  Home
+  Home,
+  Send
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -37,11 +39,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Listing {
   id: string;
-  title?: string; // Made optional since it can be generated
+  title?: string;
   description: string;
   postcode: string;
   town: string;
   neighborhood: string;
+  address_line_2?: string;
+  address_line_3?: string;
   monthly_rent: number;
   deposit: string;
   bedrooms: number;
@@ -78,6 +82,9 @@ const PropertyDetail = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -119,7 +126,7 @@ const PropertyDetail = () => {
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('full_name, email')
-            .eq('id', listingData.user_id)
+            .eq('user_id', listingData.user_id)
             .single();
 
           if (!profileError && profile) {
@@ -168,7 +175,57 @@ const PropertyDetail = () => {
       return;
     }
     
-    navigate(`/message-landlord/${id}`);
+    // Prevent user from messaging their own listing
+    if (user.id === listing?.user_id) {
+      toast({
+        title: "No puedes contactar",
+        description: "No puedes enviar mensajes a tu propio anuncio",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsMessageModalOpen(true);
+  };
+
+  const handleSendMessage = async () => {
+    if (!user || !listing || !messageText.trim()) return;
+
+    setIsSendingMessage(true);
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert([
+          {
+            from_user_id: user.id,
+            to_user_id: listing.user_id,
+            listing_id: listing.id,
+            body: messageText.trim()
+          }
+        ]);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Mensaje enviado",
+        description: "Tu mensaje ha sido enviado al propietario",
+      });
+
+      setMessageText('');
+      setIsMessageModalOpen(false);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingMessage(false);
+    }
   };
 
   const handleShare = (platform: string) => {
@@ -200,8 +257,16 @@ const PropertyDetail = () => {
   };
 
   const openMap = () => {
-    if (listing?.postcode) {
-      const query = `${listing.town || ''} ${listing.postcode}`.trim();
+    if (listing?.postcode || listing?.town) {
+      const addressParts = [
+        listing.address_line_2,
+        listing.address_line_3,
+        listing.neighborhood,
+        listing.town,
+        listing.postcode
+      ].filter(Boolean);
+      
+      const query = addressParts.join(', ');
       const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
       window.open(url, '_blank');
     }
@@ -210,6 +275,18 @@ const PropertyDetail = () => {
   const formatAddress = () => {
     if (!listing) return '';
     const parts = [listing.neighborhood, listing.town].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  const getFullAddress = () => {
+    if (!listing) return '';
+    const parts = [
+      listing.address_line_2,
+      listing.address_line_3,
+      listing.neighborhood,
+      listing.town,
+      listing.postcode
+    ].filter(Boolean);
     return parts.join(', ');
   };
 
@@ -230,6 +307,8 @@ const PropertyDetail = () => {
     if (!listing?.features) return [];
     return listing.features.split('\n').filter(feature => feature.trim() !== '').slice(0, 6);
   };
+
+  const isOwnListing = user && listing && user.id === listing.user_id;
 
   if (loading) {
     return (
@@ -534,7 +613,7 @@ const PropertyDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Mapa */}
+            {/* Mapa con Google Maps iframe */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -543,15 +622,24 @@ const PropertyDetail = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                  <div className="text-center">
-                    <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-600 mb-2">{formatAddress()}</p>
-                    <Button onClick={openMap} variant="outline">
-                      Ver en Google Maps
-                    </Button>
-                  </div>
+                <div className="mb-4">
+                  <p className="text-gray-600 mb-2">{getFullAddress()}</p>
                 </div>
+                {(listing.postcode || listing.town) && (
+                  <div className="h-64 rounded-lg overflow-hidden mb-4">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      style={{ border: 0 }}
+                      src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dO5A3xOKRlHHcI&q=${encodeURIComponent(getFullAddress())}`}
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+                <Button onClick={openMap} variant="outline" className="w-full">
+                  Ver en Google Maps
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -635,12 +723,59 @@ const PropertyDetail = () => {
                 </div>
 
                 {/* Botón de contacto */}
-                <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700 mb-4"
-                  onClick={handleContact}
-                >
-                  Contactar propietario o concertar visita
-                </Button>
+                <Dialog open={isMessageModalOpen} onOpenChange={setIsMessageModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="w-full bg-blue-600 hover:bg-blue-700 mb-4"
+                      onClick={handleContact}
+                      disabled={isOwnListing}
+                    >
+                      {isOwnListing ? 'Tu propio anuncio' : 'Contactar propietario o concertar visita'}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Enviar mensaje al propietario</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Enviando mensaje sobre: {getTitle()}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Para: {listing.profiles?.full_name || 'Usuario'}
+                        </p>
+                      </div>
+                      <Textarea
+                        placeholder="Escribe tu mensaje aquí..."
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        rows={4}
+                      />
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsMessageModalOpen(false)}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={handleSendMessage}
+                          disabled={!messageText.trim() || isSendingMessage}
+                        >
+                          {isSendingMessage ? (
+                            "Enviando..."
+                          ) : (
+                            <>
+                              <Send className="h-4 w-4 mr-2" />
+                              Enviar mensaje
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
 
                 {/* Botones de compartir */}
                 <div className="border-t pt-4">
