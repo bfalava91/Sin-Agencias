@@ -1,8 +1,8 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Bed, Bath, Car, Flame, Users, Check, X, Edit, Home } from "lucide-react";
+import { ArrowLeft, MapPin, Bed, Bath, Car, Flame, Users, Check, X, Edit, Home, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 interface ListingViewProps {
   listing: any;
@@ -11,6 +11,8 @@ interface ListingViewProps {
 }
 
 const ListingView = ({ listing, onBack, onEdit }: ListingViewProps) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   const getPropertyTypeLabel = (type: string) => {
     const types: { [key: string]: string } = {
       'studio': 'Estudio',
@@ -74,6 +76,22 @@ const ListingView = ({ listing, onBack, onEdit }: ListingViewProps) => {
     }
   };
 
+  // Handle image navigation
+  const images = listing.images || [];
+  const hasImages = images.length > 0;
+
+  const nextImage = () => {
+    if (hasImages) {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }
+  };
+
+  const prevImage = () => {
+    if (hasImages) {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -107,10 +125,53 @@ const ListingView = ({ listing, onBack, onEdit }: ListingViewProps) => {
 
       {/* Main Listing Card */}
       <Card className="mb-6">
-        <div className="relative h-64 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
-          <p className="text-white text-lg font-medium">
-            Imagen de la propiedad (Próximamente)
-          </p>
+        {/* Image Gallery */}
+        <div className="relative h-64 rounded-t-lg overflow-hidden">
+          {hasImages ? (
+            <>
+              <img 
+                src={images[currentImageIndex]} 
+                alt={`Imagen ${currentImageIndex + 1} de la propiedad`}
+                className="w-full h-full object-cover"
+              />
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                    {images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-sm">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center h-full">
+              <p className="text-white text-lg font-medium">
+                No hay imágenes disponibles
+              </p>
+            </div>
+          )}
         </div>
         
         <CardContent className="p-6">
@@ -172,6 +233,30 @@ const ListingView = ({ listing, onBack, onEdit }: ListingViewProps) => {
               </div>
             )}
           </div>
+
+          {/* Show thumbnail gallery if multiple images */}
+          {images.length > 1 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Galería de Imágenes</h3>
+              <div className="flex space-x-2 overflow-x-auto pb-2">
+                {images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                      index === currentImageIndex ? 'border-blue-500' : 'border-gray-200'
+                    }`}
+                  >
+                    <img 
+                      src={image} 
+                      alt={`Miniatura ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {listing.description && (
             <div className="mb-6">

@@ -36,10 +36,23 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Use first uploaded image or placeholder
-  const displayImage = property.images && property.images.length > 0 
-    ? property.images[0] 
-    : "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
+  // Get images from the property data - check both direct property and original data
+  const getDisplayImage = () => {
+    // First check if property has images directly
+    if (property.images && property.images.length > 0) {
+      return property.images[0];
+    }
+    
+    // Then check if original data has images
+    if (property.original?.images && property.original.images.length > 0) {
+      return property.original.images[0];
+    }
+    
+    // Fallback to placeholder
+    return "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
+  };
+
+  const displayImage = getDisplayImage();
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();

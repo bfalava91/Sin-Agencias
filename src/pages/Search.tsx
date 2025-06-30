@@ -60,6 +60,7 @@ const Search = () => {
 
       const transformedListings = data?.map(listing => {
         console.log('Transforming listing:', listing);
+        console.log('Listing images:', listing.images);
         
         const transformed = {
           id: listing.id,
@@ -69,10 +70,17 @@ const Search = () => {
           bedrooms: listing.bedrooms || 1,
           bathrooms: listing.bathrooms || 1,
           area: 70,
-          image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
+          images: listing.images || [], // Pass images directly
           featured: false,
           available: "Disponible Ahora",
           type: listing.property_type || 'flat',
+          town: listing.town,
+          neighborhood: listing.neighborhood,
+          monthly_rent: listing.monthly_rent,
+          square_meters: listing.square_meters,
+          features: listing.features,
+          move_in_date: listing.move_in_date,
+          property_type: listing.property_type,
           // Store original listing data for filtering
           original: listing
         };
