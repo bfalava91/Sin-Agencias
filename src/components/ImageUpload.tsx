@@ -87,6 +87,34 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
 
   return (
     <div className="space-y-4">
+      {/* Main Thumbnail - Show first image prominently */}
+      {images.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Imagen Principal</h4>
+          <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200">
+            <img
+              src={images[0]}
+              alt="Imagen principal de la propiedad"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
+              Principal
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeImage(0);
+              }}
+              className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+              disabled={disabled}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <Card
         className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer"
         onDrop={handleDrop}
@@ -112,29 +140,39 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
         </CardContent>
       </Card>
 
-      {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {images.map((image, index) => (
-            <div key={index} className="relative group">
-              <img
-                src={image}
-                alt={`Imagen ${index + 1}`}
-                className="w-full h-32 object-cover rounded-lg"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeImage(index);
-                }}
-                className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                disabled={disabled}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+      {/* Additional Images Grid - Show remaining images */}
+      {images.length > 1 && (
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Imágenes Adicionales ({images.length - 1})</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {images.slice(1).map((image, index) => (
+              <div key={index + 1} className="relative group">
+                <img
+                  src={image}
+                  alt={`Imagen ${index + 2}`}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(index + 1);
+                  }}
+                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  disabled={disabled}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      {images.length > 0 && (
+        <p className="text-sm text-gray-500 text-center">
+          {images.length} imagen{images.length > 1 ? 'es' : ''} subida{images.length > 1 ? 's' : ''}. La primera imagen será la principal en tu anuncio.
+        </p>
       )}
     </div>
   );

@@ -29,6 +29,7 @@ export type Database = {
           furnishing: string | null
           garden_access: boolean | null
           id: string
+          images: string[] | null
           is_readvertising: boolean | null
           max_tenants: number | null
           min_tenancy: number | null
@@ -70,6 +71,7 @@ export type Database = {
           furnishing?: string | null
           garden_access?: boolean | null
           id?: string
+          images?: string[] | null
           is_readvertising?: boolean | null
           max_tenants?: number | null
           min_tenancy?: number | null
@@ -111,6 +113,7 @@ export type Database = {
           furnishing?: string | null
           garden_access?: boolean | null
           id?: string
+          images?: string[] | null
           is_readvertising?: boolean | null
           max_tenants?: number | null
           min_tenancy?: number | null
