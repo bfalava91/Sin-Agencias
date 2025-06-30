@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,7 +57,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     remoteViewings: false,
     youtubeUrl: "",
     features: "",
-    images: [],
+    images: [], // Ensure this is always an empty array, not null
     agreedToTerms: false
   });
 
@@ -141,6 +140,15 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Updated images handler with proper state update pattern
+  const handleImagesChange = (newImages: string[]) => {
+    console.log('HandleImagesChange called with:', newImages);
+    setFormData(prev => ({ 
+      ...prev, 
+      images: newImages // This ensures images is always an array, never null
+    }));
+  };
+
   const handleFeatureChange = (featureKey: keyof typeof featureFields, value: string) => {
     setFeatureFields(prev => ({ ...prev, [featureKey]: value }));
     
@@ -160,6 +168,10 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
       return;
     }
 
+    // Debug logging before submission
+    console.log('Form submission - formData.images:', formData.images);
+    console.log('Form submission - formData.images length:', formData.images.length);
+    console.log('Form submission - formData.images type:', typeof formData.images);
     console.log('Submitting form with data:', formData);
     
     let result;
@@ -661,7 +673,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
           <CardContent className="space-y-4">
             <ImageUpload
               images={formData.images}
-              onImagesChange={(images) => handleInputChange("images", images)}
+              onImagesChange={handleImagesChange}
               disabled={isLoading}
             />
             

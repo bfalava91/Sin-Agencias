@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -94,6 +95,9 @@ export const useListings = () => {
     setIsLoading(true);
 
     try {
+      // Ensure images is always an array, never null
+      const imageUrls = Array.isArray(formData.images) ? formData.images : [];
+      
       const listingData = {
         user_id: user.id,
         is_readvertising: formData.isReadvertising,
@@ -129,11 +133,20 @@ export const useListings = () => {
         remote_viewings: formData.remoteViewings,
         youtube_url: formData.youtubeUrl || null,
         features: formData.features || null,
-        images: formData.images,
+        images: imageUrls, // This ensures it's always an array
         status: publish ? 'active' : 'draft'
       };
 
-      console.log('Creating listing with data:', listingData);
+      // Debug console logs before insert
+      console.log('=== CREATE LISTING DEBUG ===');
+      console.log('formData.images:', formData.images);
+      console.log('formData.images type:', typeof formData.images);
+      console.log('formData.images length:', formData.images?.length);
+      console.log('listingData.images:', listingData.images);
+      console.log('listingData.images type:', typeof listingData.images);
+      console.log('listingData.images length:', listingData.images?.length);
+      console.log('Full listingData:', listingData);
+      console.log('=== END DEBUG ===');
 
       const { data, error } = await supabase
         .from('listings')
@@ -147,6 +160,7 @@ export const useListings = () => {
       }
 
       console.log('Listing created successfully:', data);
+      console.log('Created listing images field:', data.images);
 
       toast({
         title: publish ? "¡Anuncio publicado exitosamente!" : "¡Anuncio guardado como borrador!",
@@ -217,6 +231,9 @@ export const useListings = () => {
     setIsLoading(true);
 
     try {
+      // Ensure images is always an array, never null
+      const imageUrls = Array.isArray(formData.images) ? formData.images : [];
+      
       const listingData = {
         is_readvertising: formData.isReadvertising,
         postcode: formData.postcode || null,
@@ -251,12 +268,21 @@ export const useListings = () => {
         remote_viewings: formData.remoteViewings,
         youtube_url: formData.youtubeUrl || null,
         features: formData.features || null,
-        images: formData.images,
+        images: imageUrls, // This ensures it's always an array
         status: publish ? 'active' : 'draft',
         updated_at: new Date().toISOString()
       };
 
-      console.log('Updating listing with data:', listingData);
+      // Debug console logs before update
+      console.log('=== UPDATE LISTING DEBUG ===');
+      console.log('formData.images:', formData.images);
+      console.log('formData.images type:', typeof formData.images);
+      console.log('formData.images length:', formData.images?.length);
+      console.log('listingData.images:', listingData.images);
+      console.log('listingData.images type:', typeof listingData.images);
+      console.log('listingData.images length:', listingData.images?.length);
+      console.log('Full listingData:', listingData);
+      console.log('=== END DEBUG ===');
 
       const { data, error } = await supabase
         .from('listings')
@@ -272,6 +298,7 @@ export const useListings = () => {
       }
 
       console.log('Listing updated successfully:', data);
+      console.log('Updated listing images field:', data.images);
 
       toast({
         title: publish ? "¡Anuncio actualizado y publicado!" : "¡Anuncio actualizado como borrador!",
@@ -361,3 +388,4 @@ export const useListings = () => {
     isLoading
   };
 };
+
