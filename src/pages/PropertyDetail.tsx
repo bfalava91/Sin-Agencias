@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,8 @@ import {
   UserCheck,
   Building,
   CreditCard,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Home
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -44,6 +46,7 @@ interface Listing {
   deposit: string;
   bedrooms: number;
   bathrooms: number;
+  square_meters?: number;
   property_type: string;
   furnishing: string;
   bills_included: boolean;
@@ -585,6 +588,12 @@ const PropertyDetail = () => {
                     <div className="flex items-center">
                       <Bath className="h-5 w-5 mr-2" />
                       {listing.bathrooms} baño{listing.bathrooms > 1 ? 's' : ''}
+                    </div>
+                  )}
+                  {listing.square_meters && (
+                    <div className="flex items-center">
+                      <Home className="h-5 w-5 mr-2" />
+                      {listing.square_meters} m²
                     </div>
                   )}
                 </div>

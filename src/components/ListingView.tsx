@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -139,7 +140,7 @@ const ListingView = ({ listing, onBack, onEdit }: ListingViewProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {listing.bedrooms && (
               <div className="flex items-center space-x-2">
                 <Bed className="h-5 w-5 text-gray-500" />
