@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -114,14 +113,6 @@ const Auth = () => {
         toast({
           title: "Usuario ya registrado",
           description: error.details || "Este email ya está registrado. Intenta iniciar sesión.",
-          variant: "destructive",
-        });
-      } else if (error.message.includes('User already registered') || 
-                 error.message.includes('already registered') ||
-                 error.message.includes('already been registered')) {
-        toast({
-          title: "Usuario ya registrado",
-          description: "Este email ya está registrado. Intenta iniciar sesión.",
           variant: "destructive",
         });
       } else {

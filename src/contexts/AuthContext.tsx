@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,38 +91,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const checkExistingUser = async (email: string) => {
+  const checkUserExists = async (email: string) => {
     try {
-      // Check if user exists in auth.users by attempting to sign in with a dummy password
-      // This is a workaround since we can't directly query auth.users
-      const { data, error } = await supabase.auth.signInWithPassword({
+      console.log('Checking if user exists for email:', email);
+      
+      // Attempt to sign in with a dummy password to check if user exists
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        password: 'dummy-password-check-123456'
+        password: 'dummy-password-that-will-never-match-123456789'
       });
       
+      console.log('Dummy sign-in error:', error);
+      
       // If error is "Invalid login credentials", user doesn't exist
-      // If error is something else, user might exist
       if (error && error.message === 'Invalid login credentials') {
-        return false; // User doesn't exist
+        console.log('User does not exist - safe to sign up');
+        return false;
       }
       
-      // If we got here without an "Invalid login credentials" error, user likely exists
-      if (data.user || (error && error.message !== 'Invalid login credentials')) {
-        return true; // User exists
-      }
+      // If we get any other error, or no error, user likely exists
+      console.log('User exists - blocking sign up');
+      return true;
       
-      return false;
     } catch (error) {
-      console.error('Error checking existing user:', error);
+      console.error('Error checking if user exists:', error);
+      // If we can't determine, assume user doesn't exist to allow signup
       return false;
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: 'tenant' | 'landlord') => {
     try {
-      // First check if user already exists
-      const userExists = await checkExistingUser(email);
+      console.log('Starting signup process for:', email);
+      
+      // First check if user already exists using dummy password attempt
+      const userExists = await checkUserExists(email);
+      
       if (userExists) {
+        console.log('User already exists, blocking signup');
         return { 
           error: { 
             message: 'User already registered',
@@ -132,6 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
+      console.log('User does not exist, proceeding with signup');
+      
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
@@ -148,24 +155,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (error) {
         console.error('Sign up error:', error);
-        
-        // Handle specific Supabase errors
-        if (error.message.includes('User already registered') || 
-            error.message.includes('already registered') ||
-            error.message.includes('already been registered')) {
-          return { 
-            error: { 
-              message: 'User already registered',
-              details: 'Este email ya está registrado. Intenta iniciar sesión.' 
-            } 
-          };
-        }
-        
         return { error };
       }
 
-      // Profile creation is now handled automatically by the database trigger
+      console.log('Signup successful:', data);
       return { error: null };
+      
     } catch (error) {
       console.error('Unexpected error during signup:', error);
       return { error };
