@@ -9,8 +9,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 interface SearchFiltersProps {
   filters?: {
     location: string;
-    propertyType: string;
-    priceRange: number[];
+    property_type: string;
+    monthly_rent: number[];
     bedrooms: string;
   };
   onFiltersChange?: (filters: any) => void;
@@ -21,11 +21,11 @@ const SearchFilters = ({ filters, onFiltersChange, resultsCount = 1247 }: Search
   const [showFilters, setShowFilters] = useState(false);
   const { t } = useLanguage();
 
-  const handlePriceRangeChange = (newRange: number[]) => {
+  const handleMonthlyRentChange = (newRange: number[]) => {
     if (onFiltersChange && filters) {
       onFiltersChange({
         ...filters,
-        priceRange: newRange
+        monthly_rent: newRange
       });
     }
   };
@@ -39,11 +39,11 @@ const SearchFilters = ({ filters, onFiltersChange, resultsCount = 1247 }: Search
     }
   };
 
-  const handlePropertyTypeChange = (type: string) => {
+  const handlePropertyTypeChange = (property_type: string) => {
     if (onFiltersChange && filters) {
       onFiltersChange({
         ...filters,
-        propertyType: type
+        property_type
       });
     }
   };
@@ -102,25 +102,25 @@ const SearchFilters = ({ filters, onFiltersChange, resultsCount = 1247 }: Search
           <div className="bg-gray-50 rounded-lg p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('filters.priceRange')}
+                Alquiler mensual (€)
               </label>
               <Slider
-                value={filters.priceRange}
-                onValueChange={handlePriceRangeChange}
+                value={filters.monthly_rent}
+                onValueChange={handleMonthlyRentChange}
                 max={3000}
                 min={300}
                 step={50}
                 className="mb-2"
               />
               <div className="flex justify-between text-sm text-gray-500">
-                <span>€{filters.priceRange[0]}</span>
-                <span>€{filters.priceRange[1]}</span>
+                <span>€{filters.monthly_rent[0]}</span>
+                <span>€{filters.monthly_rent[1]}</span>
               </div>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('filters.bedroomsLabel')}
+                Habitaciones
               </label>
               <div className="flex space-x-2">
                 {[1, 2, 3, 4, '5+'].map((bed) => (
@@ -138,24 +138,29 @@ const SearchFilters = ({ filters, onFiltersChange, resultsCount = 1247 }: Search
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('filters.propertyTypeLabel')}
+                Tipo de propiedad
               </label>
               <select 
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={filters.propertyType}
+                value={filters.property_type}
                 onChange={(e) => handlePropertyTypeChange(e.target.value)}
               >
-                <option value="any">{t('filters.any')}</option>
-                <option value="house">{t('hero.house')}</option>
-                <option value="flat">{t('hero.flat')}</option>
-                <option value="studio">{t('hero.studio')}</option>
-                <option value="room">{t('hero.room')}</option>
+                <option value="any">Cualquiera</option>
+                <option value="studio">Estudio</option>
+                <option value="bedsit">Bedsit</option>
+                <option value="flat">Piso</option>
+                <option value="penthouse">Ático</option>
+                <option value="maisonette">Dúplex</option>
+                <option value="detached">Casa Individual</option>
+                <option value="semi-detached">Casa Adosada</option>
+                <option value="terraced">Casa en Hilera</option>
+                <option value="bungalow">Bungalow</option>
               </select>
             </div>
             
             <div className="flex items-end">
               <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                {t('filters.applyFilters')}
+                Aplicar filtros
               </Button>
             </div>
           </div>

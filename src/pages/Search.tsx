@@ -15,8 +15,8 @@ const Search = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     location: searchParams.get('location') || '',
-    propertyType: searchParams.get('type') || 'any',
-    priceRange: [0, 200000], // Much more inclusive range
+    property_type: searchParams.get('property_type') || 'any',
+    monthly_rent: [0, 200000], // Much more inclusive range
     bedrooms: 'any'
   });
   const { t } = useLanguage();
@@ -55,7 +55,7 @@ const Search = () => {
           image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop",
           featured: false,
           available: "Disponible Ahora",
-          type: getPropertyTypeMapping(listing.property_type)
+          type: listing.property_type || 'flat'
         };
         
         console.log('Transformed listing:', transformed);
@@ -132,22 +132,6 @@ const Search = () => {
     return displayMapping[dbType] || 'Propiedad';
   };
 
-  const getPropertyTypeMapping = (dbType) => {
-    // Map all property types to the filter categories
-    const mapping = {
-      'studio': 'studio',
-      'bedsit': 'studio',
-      'flat': 'flat',
-      'penthouse': 'flat',
-      'maisonette': 'flat',
-      'detached': 'house',
-      'semi-detached': 'house',
-      'terraced': 'house',
-      'bungalow': 'house'
-    };
-    return mapping[dbType] || 'flat'; // Default to 'flat' instead of undefined
-  };
-
   useEffect(() => {
     console.log('Applying filters:', filters);
     console.log('All properties before filtering:', allProperties);
@@ -165,18 +149,18 @@ const Search = () => {
     }
 
     // Filtrar por tipo de propiedad
-    if (filters.propertyType !== 'any') {
+    if (filters.property_type !== 'any') {
       filtered = filtered.filter(property => {
-        console.log(`Comparing property type: ${property.type} with filter: ${filters.propertyType}`);
-        return property.type === filters.propertyType;
+        console.log(`Comparing property type: ${property.type} with filter: ${filters.property_type}`);
+        return property.type === filters.property_type;
       });
       console.log('After property type filter:', filtered);
     }
 
     // Filtrar por rango de precio
     filtered = filtered.filter(property => {
-      const priceInRange = property.price >= filters.priceRange[0] && property.price <= filters.priceRange[1];
-      console.log(`Price ${property.price} in range [${filters.priceRange[0]}, ${filters.priceRange[1]}]: ${priceInRange}`);
+      const priceInRange = property.price >= filters.monthly_rent[0] && property.price <= filters.monthly_rent[1];
+      console.log(`Price ${property.price} in range [${filters.monthly_rent[0]}, ${filters.monthly_rent[1]}]: ${priceInRange}`);
       return priceInRange;
     });
     console.log('After price filter:', filtered);

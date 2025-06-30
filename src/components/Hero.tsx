@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin } from "lucide-react";
@@ -9,7 +10,7 @@ const Hero = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [location, setLocation] = useState('');
-  const [propertyType, setPropertyType] = useState('any');
+  const [property_type, setPropertyType] = useState('any');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,8 +19,8 @@ const Hero = () => {
     if (location.trim()) {
       searchParams.set('location', location.trim());
     }
-    if (propertyType !== 'any') {
-      searchParams.set('type', propertyType);
+    if (property_type !== 'any') {
+      searchParams.set('property_type', property_type);
     }
     
     navigate(`/search?${searchParams.toString()}`);
@@ -51,14 +52,19 @@ const Hero = () => {
               <div className="flex-1">
                 <select 
                   className="w-full h-12 px-4 border border-gray-300 rounded-md text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={propertyType}
+                  value={property_type}
                   onChange={(e) => setPropertyType(e.target.value)}
                 >
                   <option value="any">{t('hero.propertyType')}</option>
-                  <option value="house">{t('hero.house')}</option>
-                  <option value="flat">{t('hero.flat')}</option>
-                  <option value="studio">{t('hero.studio')}</option>
-                  <option value="room">{t('hero.room')}</option>
+                  <option value="studio">Estudio</option>
+                  <option value="bedsit">Bedsit</option>
+                  <option value="flat">Piso</option>
+                  <option value="penthouse">Ático</option>
+                  <option value="maisonette">Dúplex</option>
+                  <option value="detached">Casa Individual</option>
+                  <option value="semi-detached">Casa Adosada</option>
+                  <option value="terraced">Casa en Hilera</option>
+                  <option value="bungalow">Bungalow</option>
                 </select>
               </div>
               <Button type="submit" size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700">
