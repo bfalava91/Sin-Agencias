@@ -91,32 +91,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const checkUserExists = async (email: string) => {
+  const checkExistingUser = async (email: string) => {
     try {
-      console.log('Checking if user exists for email:', email);
+      // Normalize email to avoid false negatives
+      const normalizedEmail = email.trim().toLowerCase();
+      console.log('Checking if user exists for normalized email:', normalizedEmail);
       
       // Attempt to sign in with a dummy password to check if user exists
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
         password: 'dummy-password-that-will-never-match-123456789'
       });
       
-      console.log('Dummy sign-in error:', error);
+      console.log('Dummy sign-in response - data:', data);
+      console.log('Dummy sign-in response - error:', error);
+      
+      // If we get a valid session (user exists and dummy password somehow matched)
+      if (data?.session && data?.user) {
+        console.log('Valid session returned - user exists');
+        // Sign out immediately to clean up the accidental login
+        await supabase.auth.signOut();
+        return true;
+      }
       
       // If error is "Invalid login credentials", user doesn't exist
       if (error && error.message === 'Invalid login credentials') {
-        console.log('User does not exist - safe to sign up');
+        console.log('Invalid login credentials error - user does not exist, safe to sign up');
         return false;
       }
       
-      // If we get any other error, or no error, user likely exists
-      console.log('User exists - blocking sign up');
+      // If we get any other error, assume user exists to be safe
+      console.log('Other error or unexpected response - assuming user exists to be safe');
       return true;
       
     } catch (error) {
-      console.error('Error checking if user exists:', error);
-      // If we can't determine, assume user doesn't exist to allow signup
-      return false;
+      console.error('Unexpected error checking if user exists:', error);
+      // If we can't determine, assume user exists to prevent duplicate signups
+      return true;
     }
   };
 
@@ -125,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Starting signup process for:', email);
       
       // First check if user already exists using dummy password attempt
-      const userExists = await checkUserExists(email);
+      const userExists = await checkExistingUser(email);
       
       if (userExists) {
         console.log('User already exists, blocking signup');
@@ -139,10 +150,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log('User does not exist, proceeding with signup');
       
+      // Normalize email for signup as well
+      const normalizedEmail = email.trim().toLowerCase();
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
           emailRedirectTo: redirectUrl,
@@ -152,6 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       });
+      
+      console.log('Supabase signUp response - data:', data);
+      console.log('Supabase signUp response - error:', error);
       
       if (error) {
         console.error('Sign up error:', error);
