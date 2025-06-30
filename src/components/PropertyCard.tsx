@@ -22,6 +22,7 @@ interface Property {
   move_in_date?: string;
   features?: string;
   square_meters?: number;
+  images?: string[];
   original?: any;
 }
 
@@ -35,8 +36,10 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Use placeholder image until image upload is implemented
-  const placeholderImage = "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
+  // Use first uploaded image or placeholder
+  const displayImage = property.images && property.images.length > 0 
+    ? property.images[0] 
+    : "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -104,7 +107,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
     <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden border-0 shadow-md cursor-pointer" onClick={handleViewDetails}>
       <div className="relative">
         <img 
-          src={placeholderImage}
+          src={displayImage}
           alt={getTitle()}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />

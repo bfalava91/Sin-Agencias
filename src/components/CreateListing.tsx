@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Upload, Loader2, Eye } from "lucide-react";
+import { ArrowLeft, Loader2, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useListings, ListingFormData } from "@/hooks/useListings";
 import ListingPreview from "./ListingPreview";
+import ImageUpload from "./ImageUpload";
 
 interface CreateListingProps {
   onBack: () => void;
@@ -49,7 +51,6 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     fireplace: false,
     studentsAllowed: false,
     familiesAllowed: false,
-    dssAccepted: false,
     petsAllowed: false,
     smokersAllowed: false,
     studentsOnly: false,
@@ -57,6 +58,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     remoteViewings: false,
     youtubeUrl: "",
     features: "",
+    images: [],
     agreedToTerms: false
   });
 
@@ -100,7 +102,6 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
         fireplace: editingListing.fireplace || false,
         studentsAllowed: editingListing.students_allowed || false,
         familiesAllowed: editingListing.families_allowed || false,
-        dssAccepted: editingListing.dss_accepted || false,
         petsAllowed: editingListing.pets_allowed || false,
         smokersAllowed: editingListing.smokers_allowed || false,
         studentsOnly: editingListing.students_only || false,
@@ -108,6 +109,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
         remoteViewings: editingListing.remote_viewings || false,
         youtubeUrl: editingListing.youtube_url || "",
         features: editingListing.features || "",
+        images: editingListing.images || [],
         agreedToTerms: true // Already agreed when creating
       });
 
@@ -135,7 +137,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
     }
   }, [user, editingListing, checkUserHasListings]);
 
-  const handleInputChange = (field: keyof ListingFormData, value: string | boolean) => {
+  const handleInputChange = (field: keyof ListingFormData, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -282,12 +284,13 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
               </div>
               
               <div>
-                <Label htmlFor="flatNumber">Número de Piso o Casa (privado)</Label>
+                <Label htmlFor="flatNumber">Número de Piso o Casa *</Label>
                 <Input
                   id="flatNumber"
                   value={formData.flatNumber}
                   onChange={(e) => handleInputChange("flatNumber", e.target.value)}
                   placeholder="Ej: 2A"
+                  required
                   disabled={isLoading}
                 />
               </div>
@@ -295,11 +298,13 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="addressLine2">Línea de Dirección 2 (opcional)</Label>
+                <Label htmlFor="addressLine2">Línea de Dirección 2 *</Label>
                 <Input
                   id="addressLine2"
                   value={formData.addressLine2}
                   onChange={(e) => handleInputChange("addressLine2", e.target.value)}
+                  placeholder="Ej: Calle Mayor"
+                  required
                   disabled={isLoading}
                 />
               </div>
@@ -499,39 +504,18 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Cantidad de Fianza</Label>
-                <Select 
-                  value={formData.deposit} 
-                  onValueChange={(value) => handleInputChange("deposit", value)}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin fianza</SelectItem>
-                    <SelectItem value="2-weeks">2 semanas de alquiler</SelectItem>
-                    <SelectItem value="1-month">1 mes de alquiler</SelectItem>
-                    <SelectItem value="2-months">2 meses de alquiler</SelectItem>
-                    <SelectItem value="custom">Personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="minTenancy">Duración Mínima de Alquiler (meses)</Label>
+                <Label htmlFor="minTenancy">Duración Mínima de Alquiler (meses) *</Label>
                 <Input
                   id="minTenancy"
                   type="number"
                   value={formData.minTenancy}
                   onChange={(e) => handleInputChange("minTenancy", e.target.value)}
                   placeholder="12"
+                  required
                   disabled={isLoading}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
               <div>
                 <Label htmlFor="maxTenants">Número Máximo de Inquilinos</Label>
                 <Input
@@ -543,14 +527,17 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
                   disabled={isLoading}
                 />
               </div>
-              
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="moveInDate">Fecha de Entrada Más Temprana</Label>
+                <Label htmlFor="moveInDate">Fecha de Entrada Más Temprana *</Label>
                 <Input
                   id="moveInDate"
                   type="date"
                   value={formData.moveInDate}
                   onChange={(e) => handleInputChange("moveInDate", e.target.value)}
+                  required
                   disabled={isLoading}
                 />
               </div>
@@ -584,19 +571,22 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
             </div>
             
             <div>
-              <Label className="text-lg font-semibold mb-3 block">Mejores Características (opcional)</Label>
+              <Label className="text-lg font-semibold mb-3 block">Mejores Características (mínimo 2) *</Label>
               <p className="text-sm text-gray-600 mb-4">
-                Añade hasta 6 de las mejores características de tu propiedad. Estas aparecerán destacadas en tu anuncio.
+                Añade al menos 2 de las mejores características de tu propiedad. Estas aparecerán destacadas en tu anuncio.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[1, 2, 3, 4, 5, 6].map(num => (
                   <div key={num}>
-                    <Label htmlFor={`feature${num}`}>Característica {num}</Label>
+                    <Label htmlFor={`feature${num}`}>
+                      Característica {num} {num <= 2 ? '*' : ''}
+                    </Label>
                     <Input
                       id={`feature${num}`}
                       value={featureFields[`feature${num}` as keyof typeof featureFields]}
                       onChange={(e) => handleFeatureChange(`feature${num}` as keyof typeof featureFields, e.target.value)}
                       placeholder={`Ej: ${num === 1 ? 'Balcón con vistas' : num === 2 ? 'Cocina moderna' : num === 3 ? 'Mucha luz natural' : num === 4 ? 'Transporte público cercano' : num === 5 ? 'Barrio tranquilo' : 'Recientemente renovado'}`}
+                      required={num <= 2}
                       disabled={isLoading}
                     />
                   </div>
@@ -616,7 +606,6 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
               {[
                 { id: "studentsAllowed", label: "Estudiantes Permitidos" },
                 { id: "familiesAllowed", label: "Familias Permitidas" },
-                { id: "dssAccepted", label: "DSS Aceptado" },
                 { id: "petsAllowed", label: "Mascotas Permitidas" },
                 { id: "smokersAllowed", label: "Fumadores Permitidos" },
                 { id: "studentsOnly", label: "Solo Estudiantes" },
@@ -638,7 +627,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
         {/* Availability */}
         <Card>
           <CardHeader>
-            <CardTitle>Disponibilidad para Visitas (opcional)</CardTitle>
+            <CardTitle>Disponibilidad para Visitas *</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -647,6 +636,7 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
                 onChange={(e) => handleInputChange("availability", e.target.value)}
                 rows={3}
                 placeholder="Describe tu disponibilidad para mostrar la propiedad..."
+                required
                 disabled={isLoading}
               />
             </div>
@@ -669,15 +659,11 @@ const CreateListing = ({ onBack, editingListing }: CreateListingProps) => {
             <CardTitle>Fotos y Videos</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-600 mb-4">
-                La funcionalidad de subida de imágenes estará disponible próximamente
-              </p>
-              <Button type="button" variant="outline" disabled>
-                Añadir Fotos (Próximamente)
-              </Button>
-            </div>
+            <ImageUpload
+              images={formData.images}
+              onImagesChange={(images) => handleInputChange("images", images)}
+              disabled={isLoading}
+            />
             
             <div>
               <Label htmlFor="youtubeUrl">Opcional: Añadir URL de YouTube</Label>

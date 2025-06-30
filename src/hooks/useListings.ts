@@ -30,7 +30,6 @@ export interface ListingFormData {
   fireplace: boolean;
   studentsAllowed: boolean;
   familiesAllowed: boolean;
-  dssAccepted: boolean;
   petsAllowed: boolean;
   smokersAllowed: boolean;
   studentsOnly: boolean;
@@ -38,6 +37,7 @@ export interface ListingFormData {
   remoteViewings: boolean;
   youtubeUrl: string;
   features: string;
+  images: string[];
   agreedToTerms: boolean;
 }
 
@@ -56,9 +56,9 @@ export const useListings = () => {
       return { success: false, error: "No authenticated user" };
     }
 
-    // Validation for required fields when publishing
+    // Enhanced validation for required fields when publishing
     if (publish) {
-      const requiredFields = ['postcode', 'town', 'advertType', 'propertyType', 'bedrooms', 'bathrooms', 'furnishing'];
+      const requiredFields = ['postcode', 'town', 'advertType', 'propertyType', 'bedrooms', 'bathrooms', 'furnishing', 'flatNumber', 'addressLine2', 'minTenancy', 'moveInDate', 'availability'];
       const missingFields = requiredFields.filter(field => !formData[field as keyof ListingFormData]);
       
       if (missingFields.length > 0) {
@@ -77,6 +77,17 @@ export const useListings = () => {
           variant: "destructive",
         });
         return { success: false, error: "Missing rent information" };
+      }
+
+      // Validate at least 2 features
+      const featuresCount = formData.features.split('\n').filter(f => f.trim() !== '').length;
+      if (featuresCount < 2) {
+        toast({
+          title: "Características insuficientes",
+          description: "Debes añadir al menos 2 características de la propiedad",
+          variant: "destructive",
+        });
+        return { success: false, error: "Insufficient features" };
       }
     }
 
@@ -111,7 +122,6 @@ export const useListings = () => {
         fireplace: formData.fireplace,
         students_allowed: formData.studentsAllowed,
         families_allowed: formData.familiesAllowed,
-        dss_accepted: formData.dssAccepted,
         pets_allowed: formData.petsAllowed,
         smokers_allowed: formData.smokersAllowed,
         students_only: formData.studentsOnly,
@@ -119,6 +129,7 @@ export const useListings = () => {
         remote_viewings: formData.remoteViewings,
         youtube_url: formData.youtubeUrl || null,
         features: formData.features || null,
+        images: formData.images,
         status: publish ? 'active' : 'draft'
       };
 
@@ -168,9 +179,9 @@ export const useListings = () => {
       return { success: false, error: "No authenticated user" };
     }
 
-    // Validation for required fields when publishing
+    // Enhanced validation for required fields when publishing
     if (publish) {
-      const requiredFields = ['postcode', 'town', 'advertType', 'propertyType', 'bedrooms', 'bathrooms', 'furnishing'];
+      const requiredFields = ['postcode', 'town', 'advertType', 'propertyType', 'bedrooms', 'bathrooms', 'furnishing', 'flatNumber', 'addressLine2', 'minTenancy', 'moveInDate', 'availability'];
       const missingFields = requiredFields.filter(field => !formData[field as keyof ListingFormData]);
       
       if (missingFields.length > 0) {
@@ -189,6 +200,17 @@ export const useListings = () => {
           variant: "destructive",
         });
         return { success: false, error: "Missing rent information" };
+      }
+
+      // Validate at least 2 features
+      const featuresCount = formData.features.split('\n').filter(f => f.trim() !== '').length;
+      if (featuresCount < 2) {
+        toast({
+          title: "Características insuficientes",
+          description: "Debes añadir al menos 2 características de la propiedad",
+          variant: "destructive",
+        });
+        return { success: false, error: "Insufficient features" };
       }
     }
 
@@ -222,7 +244,6 @@ export const useListings = () => {
         fireplace: formData.fireplace,
         students_allowed: formData.studentsAllowed,
         families_allowed: formData.familiesAllowed,
-        dss_accepted: formData.dssAccepted,
         pets_allowed: formData.petsAllowed,
         smokers_allowed: formData.smokersAllowed,
         students_only: formData.studentsOnly,
@@ -230,6 +251,7 @@ export const useListings = () => {
         remote_viewings: formData.remoteViewings,
         youtube_url: formData.youtubeUrl || null,
         features: formData.features || null,
+        images: formData.images,
         status: publish ? 'active' : 'draft',
         updated_at: new Date().toISOString()
       };
