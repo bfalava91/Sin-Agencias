@@ -18,6 +18,7 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
   const { user } = useAuth();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImage = async (file: File) => {
@@ -69,6 +70,7 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(false);
     const files = e.dataTransfer.files;
     handleFileSelect(files);
   };
@@ -77,7 +79,27 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
     e.preventDefault();
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    // Only set dragging to false if we're leaving the drop zone entirely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  };
+
   const removeImage = (index: number) => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer."
+    );
+    
+    if (!confirmed) return;
+
     const newImages = images.filter((_, i) => i !== index);
     onImagesChange(newImages);
     toast({
@@ -100,11 +122,23 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    // Adjust indices for the additional images grid (skip the main image)
+    const adjustedSourceIndex = sourceIndex === 0 ? 0 : sourceIndex;
+    const adjustedDestinationIndex = destinationIndex === 0 ? 0 : destinationIndex;
+
     const newImages = Array.from(images);
-    const [reorderedItem] = newImages.splice(result.source.index, 1);
-    newImages.splice(result.destination.index, 0, reorderedItem);
+    const [reorderedItem] = newImages.splice(adjustedSourceIndex, 1);
+    newImages.splice(adjustedDestinationIndex, 0, reorderedItem);
 
     onImagesChange(newImages);
+    
+    toast({
+      title: "Orden actualizado",
+      description: "El orden de las imágenes ha sido actualizado. Guarda el anuncio para confirmar los cambios.",
+    });
   };
 
   const handleButtonClick = () => {
@@ -143,17 +177,34 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
       )}
 
       <Card
-        className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer"
+        className={`border-2 border-dashed transition-all cursor-pointer ${
+          isDragging
+            ? 'border-blue-400 bg-blue-50 shadow-lg'
+            : 'border-gray-300 hover:border-gray-400'
+        }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
         onClick={handleButtonClick}
       >
         <CardContent className="p-8 text-center">
-          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-600 mb-4">
-            Arrastra y suelta imágenes aquí o haz clic para seleccionar
+          <Upload className={`mx-auto h-12 w-12 mb-4 transition-colors ${
+            isDragging ? 'text-blue-500' : 'text-gray-400'
+          }`} />
+          <p className={`mb-4 transition-colors ${
+            isDragging ? 'text-blue-700' : 'text-gray-600'
+          }`}>
+            {isDragging 
+              ? '¡Suelta las imágenes aquí!' 
+              : 'Arrastra y suelta imágenes aquí o haz clic para seleccionar'
+            }
           </p>
-          <Button type="button" variant="outline" disabled={uploading || disabled}>
+          <Button 
+            type="button" 
+            variant={isDragging ? 'default' : 'outline'}
+            disabled={uploading || disabled}
+          >
             {uploading ? 'Subiendo...' : 'Seleccionar Imágenes'}
           </Button>
           <input
@@ -190,15 +241,18 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
                       key={`${image}-${index + 1}`} 
                       draggableId={`${image}-${index + 1}`} 
                       index={index + 1}
+                      isDragDisabled={disabled}
                     >
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          className={`relative group cursor-move ${
-                            snapshot.isDragging ? 'opacity-75' : ''
-                          }`}
+                          className={`relative group ${
+                            disabled ? 'cursor-default' : 'cursor-move'
+                          } ${
+                            snapshot.isDragging ? 'opacity-75 scale-105 shadow-lg' : ''
+                          } transition-all duration-200`}
                         >
                           <img
                             src={image}
@@ -211,7 +265,7 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
                               e.stopPropagation();
                               setMainImage(index + 1);
                             }}
-                            className="absolute top-2 left-2 p-1 bg-yellow-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-yellow-600"
+                            className="absolute top-2 left-2 p-1 bg-yellow-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-yellow-600 hover:scale-110"
                             disabled={disabled}
                             title="Establecer como imagen principal"
                           >
@@ -223,7 +277,7 @@ const ImageUpload = ({ images, onImagesChange, disabled }: ImageUploadProps) => 
                               e.stopPropagation();
                               removeImage(index + 1);
                             }}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 hover:scale-110"
                             disabled={disabled}
                             title="Eliminar imagen"
                           >
