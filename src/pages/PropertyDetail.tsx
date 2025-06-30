@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ interface Listing {
   features: string;
   status: string;
   user_id: string;
+  images?: string[] | null;
   profiles?: {
     full_name: string;
     email: string;
@@ -88,13 +90,6 @@ const PropertyDetail = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
-
-  // Placeholder images - these will be replaced when image upload is implemented
-  const placeholderImages = [
-    "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1486304873000-235643847519?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop"
-  ];
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -157,15 +152,30 @@ const PropertyDetail = () => {
     fetchListing();
   }, [id, navigate, toast]);
 
+  // Get the actual images from the listing
+  const getListingImages = () => {
+    if (!listing) return [];
+    
+    // Handle images safely - always return an array
+    if (listing.images && Array.isArray(listing.images) && listing.images.length > 0) {
+      return listing.images;
+    }
+    
+    // Return fallback image if no images
+    return ["https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop"];
+  };
+
+  const listingImages = getListingImages();
+
   const nextImage = () => {
     setCurrentImageIndex((prev) => 
-      prev === placeholderImages.length - 1 ? 0 : prev + 1
+      prev === listingImages.length - 1 ? 0 : prev + 1
     );
   };
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => 
-      prev === 0 ? placeholderImages.length - 1 : prev - 1
+      prev === 0 ? listingImages.length - 1 : prev - 1
     );
   };
 
@@ -365,9 +375,13 @@ const PropertyDetail = () => {
           <div className="lg:col-span-2">
             <div className="relative mb-4">
               <img 
-                src={placeholderImages[currentImageIndex]}
+                src={listingImages[currentImageIndex]}
                 alt={getTitle()}
                 className="w-full h-96 object-cover rounded-lg"
+                onError={(e) => {
+                  // Fallback to default image if image fails to load
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
+                }}
               />
               
               {/* Navigation arrows */}
@@ -376,7 +390,7 @@ const PropertyDetail = () => {
                 variant="secondary"
                 onClick={prevImage}
                 className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
-                disabled={placeholderImages.length <= 1}
+                disabled={listingImages.length <= 1}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -385,7 +399,7 @@ const PropertyDetail = () => {
                 variant="secondary"
                 onClick={nextImage}
                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
-                disabled={placeholderImages.length <= 1}
+                disabled={listingImages.length <= 1}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -412,23 +426,29 @@ const PropertyDetail = () => {
               </div>
             </div>
             
-            <div className="flex space-x-2 mb-6 overflow-x-auto">
-              {placeholderImages.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentImageIndex(index)}
-                  className={`w-20 h-20 rounded-lg overflow-hidden border-2 flex-shrink-0 ${
-                    currentImageIndex === index ? 'border-blue-500' : 'border-gray-200'
-                  }`}
-                >
-                  <img 
-                    src={image} 
-                    alt={`Vista ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {/* Show thumbnail gallery if multiple images */}
+            {listingImages.length > 1 && (
+              <div className="flex space-x-2 mb-6 overflow-x-auto">
+                {listingImages.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`w-20 h-20 rounded-lg overflow-hidden border-2 flex-shrink-0 ${
+                      currentImageIndex === index ? 'border-blue-500' : 'border-gray-200'
+                    }`}
+                  >
+                    <img 
+                      src={image} 
+                      alt={`Vista ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=800&h=600&fit=crop";
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Descripción */}
             <Card className="mb-6">
