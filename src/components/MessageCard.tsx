@@ -77,7 +77,7 @@ const MessageCard = ({
             <div className="flex items-center text-sm text-gray-600 mb-2">
               <User className="h-3 w-3 mr-1" />
               {type === 'inbox' ? (
-                <span className="font-medium">Conversación con: {thread.other_user_name}</span>
+                <span className="font-medium">Mensaje de: {thread.other_user_name}</span>
               ) : (
                 <span className="font-medium">Para: {thread.other_user_name}</span>
               )}
@@ -127,31 +127,33 @@ const MessageCard = ({
           <div className="space-y-4">
             {/* Full conversation thread */}
             <div className="space-y-3 max-h-96 overflow-y-auto border rounded-lg p-3 bg-gray-50">
-              {sortedMessages.map((message, index) => (
-                <div 
-                  key={message.id}
-                  className={`p-3 rounded-lg ${
-                    type === 'inbox' 
-                      ? (message.from_user_id === thread.other_user_id ? 'bg-white border-l-4 border-blue-500' : 'bg-blue-100 ml-8')
-                      : (message.from_user_id === thread.other_user_id ? 'bg-blue-100 mr-8' : 'bg-white border-l-4 border-green-500')
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-sm font-medium text-gray-700">
-                      {type === 'inbox' 
-                        ? (message.from_user_id === thread.other_user_id ? thread.other_user_name : 'Yo')
-                        : (message.from_user_id === thread.other_user_id ? thread.other_user_name : 'Yo')
-                      }
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {format(new Date(message.sent_at), 'dd/MM/yyyy HH:mm')}
-                    </span>
+              {sortedMessages.map((message) => {
+                const isFromOtherUser = message.from_user_id === thread.other_user_id;
+                const isFromCurrentUser = !isFromOtherUser;
+                
+                return (
+                  <div 
+                    key={message.id}
+                    className={`p-3 rounded-lg ${
+                      isFromOtherUser 
+                        ? 'bg-white border-l-4 border-blue-500' 
+                        : 'bg-blue-100 ml-8 border-l-4 border-green-500'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        {isFromOtherUser ? thread.other_user_name : 'Yo'}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {format(new Date(message.sent_at), 'dd/MM/yyyy HH:mm')}
+                      </span>
+                    </div>
+                    <p className="text-gray-700 whitespace-pre-wrap text-sm">
+                      {message.body}
+                    </p>
                   </div>
-                  <p className="text-gray-700 whitespace-pre-wrap text-sm">
-                    {message.body}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <Button

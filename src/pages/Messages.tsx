@@ -72,8 +72,9 @@ const Messages = () => {
 
     try {
       setIsLoading(true);
+      console.log('Fetching messages for user:', user.id);
 
-      // Fetch all messages involving the current user with joined data
+      // Fetch messages with better join structure
       const { data: messagesData, error } = await supabase
         .from('messages')
         .select(`
@@ -83,9 +84,8 @@ const Messages = () => {
           listing_id,
           from_user_id,
           to_user_id,
-          from_profile:profiles!messages_from_user_id_fkey(full_name),
-          to_profile:profiles!messages_to_user_id_fkey(full_name),
-          listing:listings!messages_listing_id_fkey(
+          listings!messages_listing_id_fkey (
+            id,
             address_line_2,
             town,
             postcode,
@@ -99,23 +99,61 @@ const Messages = () => {
 
       if (error) {
         console.error('Error fetching messages:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los mensajes. Inténtalo de nuevo.",
+          variant: "destructive",
+        });
         return;
       }
 
-      console.log('Fetched messages with joins:', messagesData);
+      console.log('Raw messages data:', messagesData);
+
+      if (!messagesData || messagesData.length === 0) {
+        console.log('No messages found');
+        setInboxThreads([]);
+        setSentThreads([]);
+        return;
+      }
+
+      // Get unique user IDs to fetch profile names
+      const userIds = Array.from(new Set([
+        ...messagesData.map(msg => msg.from_user_id),
+        ...messagesData.map(msg => msg.to_user_id)
+      ]));
+
+      // Fetch user profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Create a map of user_id to full_name
+      const userNamesMap = new Map();
+      (profilesData || []).forEach(profile => {
+        userNamesMap.set(profile.user_id, profile.full_name || 'Usuario');
+      });
+
+      console.log('User names map:', userNamesMap);
 
       // Transform messages to include user names
-      const transformedMessages: MessageDetail[] = (messagesData || []).map(msg => ({
+      const transformedMessages: MessageDetail[] = messagesData.map(msg => ({
         id: msg.id,
         body: msg.body,
         sent_at: msg.sent_at,
         listing_id: msg.listing_id,
         from_user_id: msg.from_user_id,
         to_user_id: msg.to_user_id,
-        from_user_name: (msg.from_profile as any)?.full_name || 'Usuario',
-        to_user_name: (msg.to_profile as any)?.full_name || 'Usuario',
-        listing: msg.listing
+        from_user_name: userNamesMap.get(msg.from_user_id) || 'Usuario',
+        to_user_name: userNamesMap.get(msg.to_user_id) || 'Usuario',
+        listing: msg.listings
       }));
+
+      console.log('Transformed messages:', transformedMessages);
 
       // Group messages into threads
       const inboxThreadsMap = new Map<string, MessageThread>();
@@ -123,7 +161,8 @@ const Messages = () => {
 
       transformedMessages.forEach(message => {
         const isIncoming = message.to_user_id === user.id;
-        const threadKey = `${message.listing_id}-${isIncoming ? message.from_user_id : message.to_user_id}`;
+        const otherUserId = isIncoming ? message.from_user_id : message.to_user_id;
+        const threadKey = `${message.listing_id}-${otherUserId}`;
         const listing = (message as any).listing;
         
         const propertyTitle = listing 
@@ -134,8 +173,10 @@ const Messages = () => {
           ? `${listing.address_line_2 || ''} ${listing.town || ''} ${listing.postcode || ''}`.trim()
           : 'Ubicación no disponible';
 
+        const otherUserName = isIncoming ? message.from_user_name : message.to_user_name;
+
         if (isIncoming) {
-          // Inbox thread
+          // Inbox thread - messages TO the current user
           if (!inboxThreadsMap.has(threadKey)) {
             inboxThreadsMap.set(threadKey, {
               listing_id: message.listing_id,
@@ -143,8 +184,8 @@ const Messages = () => {
               property_location: propertyLocation,
               availability: listing?.availability,
               messages: [],
-              other_user_id: message.from_user_id,
-              other_user_name: message.from_user_name || 'Usuario',
+              other_user_id: otherUserId,
+              other_user_name: otherUserName || 'Usuario',
               last_message_at: message.sent_at
             });
           }
@@ -154,7 +195,7 @@ const Messages = () => {
             thread.last_message_at = message.sent_at;
           }
         } else {
-          // Sent thread
+          // Sent thread - messages FROM the current user
           if (!sentThreadsMap.has(threadKey)) {
             sentThreadsMap.set(threadKey, {
               listing_id: message.listing_id,
@@ -162,8 +203,8 @@ const Messages = () => {
               property_location: propertyLocation,
               availability: listing?.availability,
               messages: [],
-              other_user_id: message.to_user_id,
-              other_user_name: message.to_user_name || 'Usuario',
+              other_user_id: otherUserId,
+              other_user_name: otherUserName || 'Usuario',
               last_message_at: message.sent_at
             });
           }
@@ -184,11 +225,19 @@ const Messages = () => {
         (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
       );
 
+      console.log('Final inbox threads:', inboxArray);
+      console.log('Final sent threads:', sentArray);
+
       setInboxThreads(inboxArray);
       setSentThreads(sentArray);
 
     } catch (error) {
       console.error('Error fetching message threads:', error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error al cargar los mensajes.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -226,6 +275,13 @@ const Messages = () => {
     }));
 
     try {
+      console.log('Sending reply:', {
+        from_user_id: user.id,
+        to_user_id: thread.other_user_id,
+        listing_id: thread.listing_id,
+        body: replyText
+      });
+
       const { error } = await supabase
         .from('messages')
         .insert({
