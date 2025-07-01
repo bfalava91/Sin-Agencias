@@ -8,7 +8,7 @@ import MessageCard from "@/components/MessageCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MessageSquare, Send, Inbox } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, Inbox, Circle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,6 +21,7 @@ interface MessageDetail {
   to_user_id: string;
   from_user_name?: string;
   to_user_name?: string;
+  read_at?: string;
 }
 
 interface MessageThread {
@@ -32,6 +33,8 @@ interface MessageThread {
   other_user_id: string;
   other_user_name: string;
   last_message_at: string;
+  unread_count: number;
+  last_message_read: boolean;
 }
 
 const Messages = () => {
@@ -57,6 +60,35 @@ const Messages = () => {
     }
     
     fetchMessageThreads();
+    
+    // Set up real-time subscriptions
+    const messagesChannel = supabase
+      .channel('messages-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload) => {
+          console.log('New message received:', payload);
+          fetchMessageThreads();
+          
+          // Show toast notification for new messages
+          if (payload.new.to_user_id === user.id) {
+            toast({
+              title: "Nuevo mensaje",
+              description: "Has recibido un nuevo mensaje.",
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
   }, [user]);
 
   // Update active tab when URL params change
@@ -100,8 +132,8 @@ const Messages = () => {
       if (error) {
         console.error('Error fetching messages:', error);
         toast({
-          title: "Error",
-          description: "No se pudieron cargar los mensajes. Inténtalo de nuevo.",
+          title: "Error de conexión",
+          description: "No se pudieron cargar los mensajes. Verifica tu conexión a internet.",
           variant: "destructive",
         });
         return;
@@ -122,7 +154,7 @@ const Messages = () => {
         ...messagesData.map(msg => msg.to_user_id)
       ]));
 
-      // Fetch user profiles
+      // Fetch user profiles with error handling
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, full_name')
@@ -130,6 +162,11 @@ const Messages = () => {
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
+        toast({
+          title: "Advertencia",
+          description: "Algunos nombres de usuario no se pudieron cargar.",
+          variant: "destructive",
+        });
       }
 
       // Create a map of user_id to full_name
@@ -150,12 +187,13 @@ const Messages = () => {
         to_user_id: msg.to_user_id,
         from_user_name: userNamesMap.get(msg.from_user_id) || 'Usuario',
         to_user_name: userNamesMap.get(msg.to_user_id) || 'Usuario',
-        listing: msg.listings
+        listing: msg.listings,
+        read_at: null // Will be implemented with read status
       }));
 
       console.log('Transformed messages:', transformedMessages);
 
-      // Group messages into threads
+      // Group messages into threads with unread counts
       const inboxThreadsMap = new Map<string, MessageThread>();
       const sentThreadsMap = new Map<string, MessageThread>();
 
@@ -186,13 +224,19 @@ const Messages = () => {
               messages: [],
               other_user_id: otherUserId,
               other_user_name: otherUserName || 'Usuario',
-              last_message_at: message.sent_at
+              last_message_at: message.sent_at,
+              unread_count: 0,
+              last_message_read: false
             });
           }
           const thread = inboxThreadsMap.get(threadKey)!;
           thread.messages.push(message);
           if (new Date(message.sent_at) > new Date(thread.last_message_at)) {
             thread.last_message_at = message.sent_at;
+          }
+          // Simulate unread messages (in real implementation, this would be based on read_at field)
+          if (!message.read_at) {
+            thread.unread_count++;
           }
         } else {
           // Sent thread - messages FROM the current user
@@ -205,7 +249,9 @@ const Messages = () => {
               messages: [],
               other_user_id: otherUserId,
               other_user_name: otherUserName || 'Usuario',
-              last_message_at: message.sent_at
+              last_message_at: message.sent_at,
+              unread_count: 0,
+              last_message_read: true
             });
           }
           const thread = sentThreadsMap.get(threadKey)!;
@@ -234,8 +280,8 @@ const Messages = () => {
     } catch (error) {
       console.error('Error fetching message threads:', error);
       toast({
-        title: "Error",
-        description: "Ocurrió un error al cargar los mensajes.",
+        title: "Error inesperado",
+        description: "Ocurrió un error al cargar los mensajes. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -262,7 +308,7 @@ const Messages = () => {
     
     if (!replyText) {
       toast({
-        title: "Error",
+        title: "Campo requerido",
         description: "Por favor, escribe una respuesta antes de enviar.",
         variant: "destructive",
       });
@@ -293,15 +339,23 @@ const Messages = () => {
 
       if (error) {
         console.error('Error sending reply:', error);
-        toast({
-          title: "Error",
-          description: "No se pudo enviar la respuesta. Inténtalo de nuevo.",
-          variant: "destructive",
-        });
+        if (error.code === 'PGRST301') {
+          toast({
+            title: "Error de permisos",
+            description: "No tienes permisos para enviar este mensaje.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error de envío",
+            description: "No se pudo enviar la respuesta. Verifica tu conexión.",
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
-          title: "Éxito",
-          description: "Respuesta enviada correctamente.",
+          title: "¡Mensaje enviado!",
+          description: "Tu respuesta ha sido enviada correctamente.",
         });
         
         // Clear the reply text
@@ -316,7 +370,7 @@ const Messages = () => {
     } catch (error) {
       console.error('Error sending reply:', error);
       toast({
-        title: "Error",
+        title: "Error de conexión",
         description: "No se pudo enviar la respuesta. Inténtalo de nuevo.",
         variant: "destructive",
       });
@@ -334,6 +388,9 @@ const Messages = () => {
       [threadKey]: !prev[threadKey]
     }));
   };
+
+  // Calculate total unread messages
+  const totalUnreadMessages = inboxThreads.reduce((total, thread) => total + thread.unread_count, 0);
 
   if (!user) {
     return null;
@@ -369,7 +426,17 @@ const Messages = () => {
         </Button>
 
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis Mensajes</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
+            Mis Mensajes
+            {totalUnreadMessages > 0 && (
+              <span className="ml-3 flex items-center">
+                <Circle className="h-3 w-3 text-red-500 fill-current mr-1" />
+                <span className="text-sm text-red-600 font-medium">
+                  {totalUnreadMessages} nuevo{totalUnreadMessages > 1 ? 's' : ''}
+                </span>
+              </span>
+            )}
+          </h1>
           <p className="text-gray-600">Gestiona tus conversaciones sobre propiedades</p>
         </div>
 
@@ -378,6 +445,9 @@ const Messages = () => {
             <TabsTrigger value="inbox" className="flex items-center">
               <Inbox className="h-4 w-4 mr-2" />
               Bandeja de Entrada ({inboxThreads.length})
+              {totalUnreadMessages > 0 && (
+                <Circle className="h-2 w-2 text-red-500 fill-current ml-2" />
+              )}
             </TabsTrigger>
             <TabsTrigger value="sent" className="flex items-center">
               <Send className="h-4 w-4 mr-2" />
